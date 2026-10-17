@@ -28,6 +28,7 @@ interface AuthModalProps {
   onClose: () => void;
   onAuthSuccess: (user: User, token: string) => void;
   currentLanguage: Language;
+  initialMode?: 'login' | 'signup';
 }
 
 const AVAILABLE_PLATFORMS = [
@@ -62,9 +63,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onAuthSuccess,
   currentLanguage,
+  initialMode = 'login',
 }) => {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [signupStep, setSignupStep] = useState<1 | 2>(1);
+
+  React.useEffect(() => {
+    if (initialMode) {
+      setMode(initialMode);
+      if (initialMode === 'signup') {
+        setSignupStep(1);
+      }
+    }
+  }, [initialMode, isOpen]);
 
   // Login Form States (Phone + Password Only)
   const [loginPhone, setLoginPhone] = useState('');

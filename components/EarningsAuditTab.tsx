@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   PlusCircle,
 } from 'lucide-react';
+import { User } from '@/lib/auth';
 
 interface EarningsAuditTabProps {
   language: Language;
@@ -31,6 +32,8 @@ interface EarningsAuditTabProps {
     amount: string;
     orderId: string;
   }) => void;
+  user?: User | null;
+  onOpenAuthModal?: (mode?: 'login' | 'signup') => void;
 }
 
 const STORAGE_KEY = 'saathi_earnings_log';
@@ -39,6 +42,8 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
   language,
   persona,
   onNavigateToDispute,
+  user,
+  onOpenAuthModal,
 }) => {
   const [currentRecord, setCurrentRecord] = useState<EarningsRecord>(sampleEarningsPresets[0]);
   const [savedLogs, setSavedLogs] = useState<EarningsRecord[]>([]);
@@ -301,13 +306,26 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-orange-600" />
+            <h2 className="text-lg font-bold text-slate-900 flex flex-wrap items-center gap-2">
+              <DollarSign className="w-5 h-5 text-orange-600" aria-hidden="true" />
               <span>Earnings & Unfair Deduction Auditor</span>
-              <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Save className="w-3 h-3" />
-                ✓ Auto-Saved on Device
-              </span>
+              {user ? (
+                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border border-emerald-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>✓ D1 Cloud Synced ({user.name})</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuthModal && onOpenAuthModal('signup')}
+                  title="यह केवल डेमो है, डेटा सेव नहीं हो रहा है। खाता बनाने के लिए क्लिक करें।"
+                  aria-label="डेमो मोड: डेटा स्थायी रूप से सुरक्षित नहीं है। खाता बनाने के लिए क्लिक करें।"
+                  className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border border-amber-300 transition cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                  <span>⚠️ डेमो मोड: डेटा सुरक्षित नहीं — <span className="underline font-black text-amber-950">खाता बनाएं (Create Account)</span></span>
+                </button>
+              )}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
               Audit your delivery slips, calculate real take-home cash, and automatically save shift payouts to your personal device history.
