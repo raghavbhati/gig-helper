@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "pages:build": "next build",
+    "test": "vitest run",
+    "pages:build": "node -e \"const fs=require('fs'); if(fs.existsSync('app/api')) fs.renameSync('app/api','.app_api_tmp'); try { require('child_process').execSync('CF_PAGES=1 next build', {stdio: 'inherit'}); } finally { if(fs.existsSync('.app_api_tmp')) fs.renameSync('.app_api_tmp','app/api'); }\"",
     "pages:deploy": "wrangler pages deploy out",
     "pages:dev": "wrangler pages dev out"
   },
@@ -28,6 +29,8 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5",
     "wrangler": "^3.80.5"
   }
 }

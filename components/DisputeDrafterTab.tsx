@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { jsPDF } from 'jspdf';
 import { Language, Persona } from '@/lib/translations';
 import {
   Scale,
@@ -148,8 +147,9 @@ export const DisputeDrafterTab: React.FC<DisputeDrafterTabProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!draftResult) return;
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
 
     doc.setFont("helvetica", "bold");
@@ -387,46 +387,63 @@ export const DisputeDrafterTab: React.FC<DisputeDrafterTabProps> = ({
       </div>
 
       {/* Escalation Tier Selector Tabs */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div role="tablist" aria-label="Dispute Escalation Tiers" className="flex flex-wrap items-center gap-2">
         <button
+          role="tab"
+          id="tab-tier1"
+          aria-selected={activeTier === 'tier1'}
+          aria-controls="dispute-content-panel"
           onClick={() => setActiveTier('tier1')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition border ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
             activeTier === 'tier1'
               ? 'bg-slate-900 text-white border-slate-900 shadow-md'
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
           }`}
         >
-          <MessageSquare className="w-3.5 h-3.5 text-orange-400" />
+          <MessageSquare className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
           <span>Tier 1: In-App Support Chat</span>
         </button>
 
         <button
+          role="tab"
+          id="tab-tier2"
+          aria-selected={activeTier === 'tier2'}
+          aria-controls="dispute-content-panel"
           onClick={() => setActiveTier('tier2')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition border ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
             activeTier === 'tier2'
               ? 'bg-slate-900 text-white border-slate-900 shadow-md'
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
           }`}
         >
-          <FileText className="w-3.5 h-3.5 text-amber-400" />
+          <FileText className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
           <span>Tier 2: Operations Management Email</span>
         </button>
 
         <button
+          role="tab"
+          id="tab-tier3"
+          aria-selected={activeTier === 'tier3'}
+          aria-controls="dispute-content-panel"
           onClick={() => setActiveTier('tier3')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition border ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
             activeTier === 'tier3'
               ? 'bg-slate-900 text-white border-slate-900 shadow-md'
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
           }`}
         >
-          <Building2 className="w-3.5 h-3.5 text-rose-400" />
+          <Building2 className="w-3.5 h-3.5 text-rose-400" aria-hidden="true" />
           <span>Tier 3: Labor Board Legal Petition</span>
         </button>
       </div>
 
       {/* Generated Letter Display Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div
+        role="tabpanel"
+        id="dispute-content-panel"
+        aria-labelledby={`tab-${activeTier}`}
+        className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+      >
         
         {/* Action Header on Box */}
         <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -443,10 +460,11 @@ export const DisputeDrafterTab: React.FC<DisputeDrafterTabProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={speakActiveText}
-              className="text-xs bg-white hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 font-semibold flex items-center gap-1.5 transition"
+              aria-label="Listen aloud to the drafted petition"
+              className="text-xs bg-white hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 font-semibold flex items-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
               title="Listen Aloud"
             >
-              <Volume2 className="w-3.5 h-3.5 text-orange-600" />
+              <Volume2 className="w-3.5 h-3.5 text-orange-600" aria-hidden="true" />
               <span>Listen</span>
             </button>
 
@@ -459,9 +477,10 @@ export const DisputeDrafterTab: React.FC<DisputeDrafterTabProps> = ({
                   : draftResult?.laborCommissionerPetition?.body;
                 handleCopyText(text || '');
               }}
-              className="text-xs bg-white hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 font-semibold flex items-center gap-1.5 transition"
+              aria-label="Copy dispute petition to clipboard"
+              className="text-xs bg-white hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 font-semibold flex items-center gap-1.5 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5 text-slate-500" aria-hidden="true" />}
               <span>{copied ? 'Copied!' : 'Copy'}</span>
             </button>
 
@@ -472,17 +491,19 @@ export const DisputeDrafterTab: React.FC<DisputeDrafterTabProps> = ({
                   : draftResult?.officialEscalationEmail?.body;
                 handleWhatsAppShare(text || '');
               }}
-              className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition shadow-sm"
+              aria-label="Share dispute draft via WhatsApp"
+              className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <Share2 className="w-3.5 h-3.5" />
+              <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
               <span>WhatsApp</span>
             </button>
 
             <button
               onClick={handleDownloadPDF}
-              className="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition shadow-sm"
+              aria-label="Download dispute petition as PDF document"
+              className="text-xs bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              <Download className="w-3.5 h-3.5 text-orange-400" />
+              <Download className="w-3.5 h-3.5 text-orange-400" aria-hidden="true" />
               <span>Download PDF</span>
             </button>
           </div>

@@ -90,16 +90,24 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
 
           <button
             onClick={() => setShowQuiz(!showQuiz)}
-            className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm"
+            aria-expanded={showQuiz}
+            aria-controls="eligibility-matcher-panel"
+            aria-label={showQuiz ? 'Hide Eligibility Matcher' : 'Check My Eligibility in 30 Sec'}
+            className="px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
-            <Sparkles className="w-4 h-4 text-amber-200" />
+            <Sparkles className="w-4 h-4 text-amber-200" aria-hidden="true" />
             <span>{showQuiz ? 'Hide Eligibility Matcher' : 'Check My Eligibility in 30 Sec'}</span>
           </button>
         </div>
 
         {/* Quick Quiz Dropdown */}
         {showQuiz && (
-          <div className="mt-4 pt-4 border-t border-slate-100 bg-orange-50/50 p-4 rounded-xl border border-orange-100 animate-fadeIn space-y-3">
+          <div
+            id="eligibility-matcher-panel"
+            role="region"
+            aria-label="Eligibility Matcher"
+            className="mt-4 pt-4 border-t border-slate-100 bg-orange-50/50 p-4 rounded-xl border border-orange-100 animate-fadeIn space-y-3"
+          >
             <h4 className="font-bold text-xs text-orange-950 uppercase tracking-wide">
               Quick Eligibility Verification:
             </h4>
@@ -109,8 +117,9 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
                 <input
                   type="number"
                   value={quizAge}
+                  aria-label="Your Age"
                   onChange={(e) => setQuizAge(e.target.value)}
-                  className="w-full bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-medium"
+                  className="w-full bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
 
@@ -118,8 +127,9 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
                 <label className="font-medium text-slate-700 block mb-1">Do you pay Income Tax or have PF?</label>
                 <select
                   value={quizIncomeTax}
+                  aria-label="Do you pay Income Tax or have PF?"
                   onChange={(e) => setQuizIncomeTax(e.target.value)}
-                  className="w-full bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-medium"
+                  className="w-full bg-white px-3 py-1.5 rounded-lg border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="no">No (Unorganized / Gig worker)</option>
                   <option value="yes">Yes (Salaried / Formal)</option>
@@ -129,7 +139,8 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
               <div className="flex items-end">
                 <button
                   onClick={handleRunQuiz}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 rounded-lg text-xs transition"
+                  aria-label="Match eligible government schemes"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 rounded-lg text-xs transition focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   Match Schemes
                 </button>
@@ -137,7 +148,11 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
             </div>
 
             {quizResult && (
-              <div className="mt-2 text-xs font-bold text-emerald-800 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+              <div
+                role="status"
+                aria-live="polite"
+                className="mt-2 text-xs font-bold text-emerald-800 bg-emerald-50 p-3 rounded-lg border border-emerald-200"
+              >
                 {quizResult}
               </div>
             )}
@@ -145,13 +160,14 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
         )}
 
         {/* Category Filters */}
-        <div className="mt-4 pt-3 flex flex-wrap items-center gap-2 text-xs">
+        <div role="group" aria-label="Filter schemes by category" className="mt-4 pt-3 flex flex-wrap items-center gap-2 text-xs">
           <span className="font-semibold text-slate-400">Filter By Category:</span>
           {['all', 'insurance', 'welfare_board', 'health', 'loan'].map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1 rounded-lg font-medium transition capitalize ${
+              aria-pressed={selectedCategory === cat}
+              className={`px-3 py-1 rounded-lg font-medium transition capitalize focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                 selectedCategory === cat
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -175,8 +191,18 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
             >
               {/* Scheme Header Card */}
               <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
+                aria-label={`${language === 'en' ? scheme.title : scheme.titleHindi}, ${isExpanded ? 'collapse details' : 'expand details'}`}
                 onClick={() => setExpandedSchemeId(isExpanded ? '' : scheme.id)}
-                className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/60 transition"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setExpandedSchemeId(isExpanded ? '' : scheme.id);
+                  }
+                }}
+                className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50/60 transition focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-2xl"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -189,7 +215,7 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
                   </div>
 
                   <div className="text-xs font-extrabold text-emerald-700 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden="true" />
                     <span>{language === 'en' ? scheme.benefitAmount : scheme.benefitAmountHindi}</span>
                   </div>
                 </div>
@@ -200,13 +226,14 @@ export const WelfareSchemesTab: React.FC<WelfareSchemesTabProps> = ({
                       e.stopPropagation();
                       speakScheme(scheme);
                     }}
-                    className="p-2 rounded-xl bg-slate-100 hover:bg-orange-100 text-slate-600 hover:text-orange-700 transition"
+                    aria-label={`Listen to details for ${language === 'en' ? scheme.title : scheme.titleHindi}`}
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-orange-100 text-slate-600 hover:text-orange-700 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
                     title="Listen aloud"
                   >
-                    <Volume2 className="w-4 h-4" />
+                    <Volume2 className="w-4 h-4" aria-hidden="true" />
                   </button>
 
-                  <div className="p-2 text-slate-400">
+                  <div className="p-2 text-slate-400" aria-hidden="true">
                     {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </div>
                 </div>

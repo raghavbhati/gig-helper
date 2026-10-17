@@ -63,9 +63,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
             
             {/* Persona Switcher */}
-            <div className="bg-slate-800/90 p-1 rounded-xl flex items-center gap-1 border border-slate-700 text-xs">
+            <div role="toolbar" aria-label="Worker Persona Selector" className="bg-slate-800/90 p-1 rounded-xl flex items-center gap-1 border border-slate-700 text-xs">
               <button
                 onClick={() => onPersonaChange('delivery')}
+                aria-pressed={persona === 'delivery'}
+                aria-label="Select Delivery Partner persona"
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all ${
                   persona === 'delivery'
                     ? 'bg-orange-600 text-white shadow'
@@ -73,12 +75,14 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
                 title="Delivery Partner"
               >
-                <Bike className="w-3.5 h-3.5" />
+                <Bike className="w-3.5 h-3.5" aria-hidden="true" />
                 <span className="hidden md:inline">Delivery</span>
               </button>
 
               <button
                 onClick={() => onPersonaChange('driver')}
+                aria-pressed={persona === 'driver'}
+                aria-label="Select Cab and Auto Driver persona"
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all ${
                   persona === 'driver'
                     ? 'bg-orange-600 text-white shadow'
@@ -86,12 +90,14 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
                 title="Cab / Auto Driver"
               >
-                <Car className="w-3.5 h-3.5" />
+                <Car className="w-3.5 h-3.5" aria-hidden="true" />
                 <span className="hidden md:inline">Driver</span>
               </button>
 
               <button
                 onClick={() => onPersonaChange('daily_wage')}
+                aria-pressed={persona === 'daily_wage'}
+                aria-label="Select Daily Wage and Construction Laborer persona"
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all ${
                   persona === 'daily_wage'
                     ? 'bg-orange-600 text-white shadow'
@@ -99,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
                 title="Daily Wage / Construction"
               >
-                <Hammer className="w-3.5 h-3.5" />
+                <Hammer className="w-3.5 h-3.5" aria-hidden="true" />
                 <span className="hidden md:inline">Laborer</span>
               </button>
             </div>
@@ -126,13 +132,14 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Desktop Voice Button */}
             <button
               onClick={onOpenVoiceModal}
+              aria-label={t.voiceButtonStart}
               className={`hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md ${
                 isVoiceActive
                   ? 'bg-rose-600 text-white animate-pulse'
                   : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-orange-600/20'
               }`}
             >
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className="w-4 h-4" aria-hidden="true" />
               <span>{t.voiceButtonStart}</span>
             </button>
           </div>
