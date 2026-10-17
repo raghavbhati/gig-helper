@@ -37,4 +37,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local sqlite and temporary api build dirs
+.data/
+.app_api_tmp/
+
 # End of https://www.toptal.com/developers/gitignore/api/nextjs

@@ -2,3 +2,8 @@ name = "saathi-gig-helper"
 pages_build_output_dir = "./out"
 compatibility_date = "2024-09-29"
 compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "saathi-d1"
+database_id = "saathi-d1-edge-db"

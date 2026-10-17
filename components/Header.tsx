@@ -2,7 +2,18 @@
 
 import React from 'react';
 import { translations, Language, Persona } from '@/lib/translations';
-import { Bike, Car, Hammer, Globe, Volume2, ShieldAlert } from 'lucide-react';
+import { User } from '@/lib/auth';
+import {
+  Bike,
+  Car,
+  Hammer,
+  Globe,
+  Volume2,
+  ShieldAlert,
+  UserCheck,
+  LogIn,
+  LogOut,
+} from 'lucide-react';
 
 interface HeaderProps {
   language: Language;
@@ -11,6 +22,10 @@ interface HeaderProps {
   onPersonaChange: (p: Persona) => void;
   onOpenVoiceModal: () => void;
   isVoiceActive?: boolean;
+  user?: User | null;
+  onOpenAuthModal?: () => void;
+  onLogout?: () => void;
+  isSyncing?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -20,6 +35,10 @@ export const Header: React.FC<HeaderProps> = ({
   onPersonaChange,
   onOpenVoiceModal,
   isVoiceActive,
+  user,
+  onOpenAuthModal,
+  onLogout,
+  isSyncing,
 }) => {
   const t = translations[language] || translations.en;
 
@@ -133,7 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenVoiceModal}
               aria-label={t.voiceButtonStart}
-              className={`hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md ${
+              className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md ${
                 isVoiceActive
                   ? 'bg-rose-600 text-white animate-pulse'
                   : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-orange-600/20'
@@ -142,6 +161,44 @@ export const Header: React.FC<HeaderProps> = ({
               <Volume2 className="w-4 h-4" aria-hidden="true" />
               <span>{t.voiceButtonStart}</span>
             </button>
+
+            {/* User Login / Cloud Account Status */}
+            {user ? (
+              <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700/80 px-2.5 py-1 rounded-xl text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/30">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="hidden sm:block text-left leading-tight">
+                    <span className="font-bold text-slate-100 block text-[11px] max-w-[90px] truncate">{user.name}</span>
+                    <span className="text-[9px] text-emerald-400 font-mono flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      D1 Synced
+                    </span>
+                  </div>
+                </div>
+
+                {onLogout && (
+                  <button
+                    onClick={onLogout}
+                    aria-label="लॉगआउट करें (Log out)"
+                    title="Logout"
+                    className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 transition focus:outline-none focus:ring-1 focus:ring-rose-500"
+                  >
+                    <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={onOpenAuthModal}
+                aria-label="लॉगिन करें या नया खाता बनाएं (Login or Create Account)"
+                className="flex items-center gap-1.5 bg-orange-600/90 hover:bg-orange-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-sm border border-orange-500/50 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>लॉगिन (Login)</span>
+              </button>
+            )}
           </div>
 
         </div>

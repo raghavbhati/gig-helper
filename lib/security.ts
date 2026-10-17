@@ -35,6 +35,8 @@ export function sanitizeInput(input: string, maxLength: number = 2000): string {
     .trim();
 }
 
+export const sanitizeText = sanitizeInput;
+
 /**
  * Validate earnings input payload
  */

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "pages:build": "node -e \"const fs=require('fs'); if(fs.existsSync('app/api')) fs.renameSync('app/api','.app_api_tmp'); try { require('child_process').execSync('CF_PAGES=1 next build', {stdio: 'inherit'}); } finally { if(fs.existsSync('.app_api_tmp')) fs.renameSync('.app_api_tmp','app/api'); }\"",
+    "pages:build": "rm -rf .next out && node -e \"const fs=require('fs'); if(fs.existsSync('app/api')) fs.renameSync('app/api','.app_api_tmp'); try { require('child_process').execSync('CF_PAGES=1 next build', {stdio: 'inherit'}); } finally { if(fs.existsSync('.app_api_tmp')) fs.renameSync('.app_api_tmp','app/api'); }\"",
     "pages:deploy": "wrangler pages deploy out",
     "pages:dev": "wrangler pages dev out"
   },
