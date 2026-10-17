@@ -1,4 +1,4 @@
-// Native Web Crypto Authentication Library for Saathi
+// Native Web Crypto Authentication Library for Gig Kavach
 // 100% Edge-Compatible (Cloudflare Workers & Node.js 20+)
 
 export interface User {
@@ -31,7 +31,7 @@ export interface LoginRequest {
   password: string;
 }
 
-const JWT_SECRET = process.env.AUTH_SECRET || 'saathi-gig-worker-secure-secret-key-2026';
+const JWT_SECRET = process.env.AUTH_SECRET || 'gig-kavach-worker-secure-secret-key-2026';
 
 /**
  * Derives a PBKDF2 salted hash using standard Web Crypto API (SHA-256, 100,000 iterations).

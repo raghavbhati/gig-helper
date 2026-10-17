@@ -8,6 +8,13 @@ export async function POST() {
     message: 'सफलतापूर्वक लॉगआउट हो गया।',
   });
 
+  response.cookies.set('gig_kavach_session', '', {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 0,
+  });
+
   response.cookies.set('saathi_session', '', {
     path: '/',
     httpOnly: true,

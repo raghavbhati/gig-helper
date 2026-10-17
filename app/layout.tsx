@@ -2,8 +2,15 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Saathi (साथी) — काम में आपका भरोसेमंद साथी',
+  metadataBase: new URL('https://gig-kavach.raghavbhatirv.in'),
+  title: 'Gig Kavach (गिग कवच) — काम में आपका भरोसेमंद सुरक्षा कवच',
   description: 'Multilingual GenAI co-pilot for gig and informal workers: earnings audit, dispute drafting, government welfare schemes, document explainer, and worker safety.',
+  openGraph: {
+    title: 'Gig Kavach (गिग कवच) — काम में आपका भरोसेमंद सुरक्षा कवच',
+    description: 'Multilingual GenAI co-pilot for gig and informal workers: earnings audit, dispute drafting, government welfare schemes, document explainer, and worker safety.',
+    url: 'https://gig-kavach.raghavbhatirv.in',
+    siteName: 'Gig Kavach',
+  },
   icons: {
     icon: '/favicon.ico',
   },

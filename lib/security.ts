@@ -1,5 +1,5 @@
 /**
- * Security & Sanitization Utilities for Saathi
+ * Security & Sanitization Utilities for Gig Kavach
  */
 
 // Basic in-memory rate limiter per IP for API protection

@@ -5,5 +5,5 @@ compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "saathi-d1"
-database_id = "saathi-d1-edge-db"
+database_name = "gig-kavach-d1"
+database_id = "88a4501b-ecda-4028-8db4-6474ef64aeb8"

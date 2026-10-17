@@ -1,6 +1,7 @@
-# Saathi (साथी) — Design System & Visual Specification
+# Gig Kavach (गिग कवच) — Design System & Visual Specification
 
-> **Official Visual Identity Guide for Saathi: GenAI Co-pilot for Gig & Informal Workers**  
+> **Official Visual Identity Guide for Gig Kavach (गिग कवच): GenAI Co-pilot for Gig & Informal Workers**  
+> **Production Domain:** [https://gig-kavach.raghavbhatirv.in/](https://gig-kavach.raghavbhatirv.in/)  
 > **Color Theme:** Ocean & Teal  
 > **Typography System:** Sora (Headings & Metrics) + Manrope (Body & UI Controls)  
 > **Constants Source:** [`lib/theme.ts`](file:///Users/raghav/Desktop/gig-helper/lib/theme.ts) & [`tailwind.config.js`](file:///Users/raghav/Desktop/gig-helper/tailwind.config.js)
@@ -9,7 +10,7 @@
 
 ## 1. Project Overview & Design Philosophy
 
-**Saathi** is an AI co-pilot crafted for delivery riders, cab/auto drivers, and daily wage workers across India. These workers operate in challenging conditions: direct sunlight on motorcycle phone mounts, noisy traffic, low connectivity, and multilingual contexts.
+**Gig Kavach (गिग कवच)** is an AI co-pilot crafted for delivery riders, cab/auto drivers, and daily wage workers across India. These workers operate in challenging conditions: direct sunlight on motorcycle phone mounts, noisy traffic, low connectivity, and multilingual contexts.
 
 ### Core Visual Principles
 1. **Dignity & Clarity:** Clean, respectful, non-patronizing visual hierarchy.
@@ -31,7 +32,7 @@ The palette is constructed around deep ocean pines, vivid interactive teals, sof
 | `ocean-850` (Hero Deep Pine) | `#0d3830` | `rgb(13, 56, 48)` | **Signature Card Background** (Today's Earnings Hero Card, Floating Voice FAB, Dark Headers) |
 | `ocean-900` (Midnight Pine) | `#0a2e27` | `rgb(10, 46, 39)` | Hover states on dark cards, footer, dark overlays |
 | `ocean-950` (Abyssal Teal) | `#071f1a` | `rgb(7, 31, 26)` | Deepest contrast accents |
-| `teal-700` (Brand Mark Teal) | `#0f766e` | `rgb(15, 118, 110)` | **"सा" Logo Badge Background**, active tab text, prominent labels |
+| `teal-700` (Brand Mark Teal) | `#0f766e` | `rgb(15, 118, 110)` | **"गि" / "GK" Logo Badge Background**, active tab text, prominent labels |
 | `teal-600` (Interactive Teal) | `#0d9488` | `rgb(13, 148, 136)` | **Primary CTA Buttons**, active links, focus rings, interactive toggles |
 | `teal-500` (Vivid Teal) | `#14b8a6` | `rgb(20, 184, 166)` | Hover highlights, active progress indicators |
 | `teal-100` (Mint Glass) | `#ccfbf1` | `rgb(204, 251, 241)` | **Active Navigation Pill Background**, selected chips |
@@ -102,8 +103,8 @@ In Tailwind CSS, native utility classes are mapped directly:
 ## 5. Screen Anatomy (Aligned with Provided Screenshot)
 
 ### A. Top Application Header
-- **Logo Badge:** Rounded rectangle (`rounded-xl`), background `bg-teal-700` (`#0f766e`), centered white Devanagari **"सा"** in bold Sora.
-- **Brand Identity:** Title **"साथी"** in bold Sora `text-ocean-950` (`#102a24`), subtitle **"काम में आपका भरोसेमंद साथी"** in `text-slate-500`.
+- **Logo Badge:** Rounded rectangle (`rounded-xl`), background `bg-teal-700` (`#0f766e`), centered white Devanagari **"गि"** (or **"GK"** in English) in bold Sora.
+- **Brand Identity:** Title **"गिग कवच"** (or **"Gig Kavach"**) in bold Sora `text-ocean-950` (`#102a24`), subtitle **"काम में आपका भरोसेमंद सुरक्षा कवच"** in `text-slate-500`.
 - **Language Switcher:** Crisp white pill with fine border (`border-[#d1deda]`), globe icon, and active language name (**"हिंदी"**).
 - **Emergency SOS:** Vibrant crimson button (`bg-[#dc2626]`), rounded-xl, white shield icon + **"SOS"** text. Provides 1-click access to the emergency hotline, family contact alert, and night safety tracking.
 
@@ -125,7 +126,7 @@ In Tailwind CSS, native utility classes are mapped directly:
 - **Icon Badge:** Warm amber rounded container (`bg-[#fef3c7]`) with `Lightbulb` icon (`text-[#d97706]`).
 - **Title:** `आज की छोटी सलाह` in bold Sora.
 - **Body:** `पेट्रोल का खर्च रोज़ लिखें — महीने के आखिर में पता चलेगा असली बचत कितनी हुई।`
-- **Action Link:** `साथी की सलाह · 1 मिनट पढ़ें` in interactive teal (`text-[#0d9488] font-bold`).
+- **Action Link:** `गिग कवच की सलाह · 1 मिनट पढ़ें` in interactive teal (`text-[#0d9488] font-bold`).
 
 ### E. Quick Stats & Action Chips
 Horizontal grid of clean white rounded cards:
@@ -137,7 +138,7 @@ Horizontal grid of clean white rounded cards:
 ### F. Floating Action Button (FAB)
 - **Position:** Fixed at bottom right.
 - **Styling:** Pill-shaped `bg-[#0d3830]` with gentle drop shadow (`shadow-2xl shadow-[#0d3830]/40`).
-- **Content:** Speech bubble icon (`MessageSquare`) + **"मदद पूछें"** text. Triggers the Saathi Multilingual AI Voice Assistant.
+- **Content:** Speech bubble icon (`MessageSquare`) + **"मदद पूछें"** text. Triggers the Gig Kavach Multilingual AI Voice Assistant.
 
 ### G. Docked Bottom Navigation Bar
 - **Container:** Elevated bar fixed at screen bottom with blur backdrop (`bg-white/95 backdrop-blur-md border-t border-[#e2ece9]`).

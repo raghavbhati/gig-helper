@@ -1,6 +1,7 @@
-# Saathi (साथी) — GenAI Co-pilot for Gig & Informal Workers
+# Gig Kavach (गिग कवच) — GenAI Co-pilot for Gig & Informal Workers
 
-> **Hackathon Submission**: A voice-first, multilingual GenAI assistant designed for delivery partners, cab drivers, and daily-wage laborers to audit earnings, decode tricky contracts, enforce safety, access welfare schemes, and draft policy-backed legal disputes.
+> **Live Production App**: [https://gig-kavach.raghavbhatirv.in/](https://gig-kavach.raghavbhatirv.in/)  
+> **Mission**: A voice-first, multilingual GenAI assistant and protective shield designed for delivery partners, cab drivers, and daily-wage laborers to audit earnings, decode tricky contracts, enforce safety, access welfare schemes, and draft policy-backed legal disputes.
 
 ---
 
@@ -64,13 +65,13 @@ npm install
 
 # 2. (Optional) Add your Gemini API Key in .env.local
 echo "GEMINI_API_KEY=your_key_here" > .env.local
-# Note: Saathi runs out-of-the-box with built-in realistic AI fallback even without an API key!
+# Note: Gig Kavach runs out-of-the-box with built-in realistic AI fallback even without an API key!
 
 # 3. Run development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+Open [http://localhost:3000](http://localhost:3000) to view the application or visit [https://gig-kavach.raghavbhatirv.in/](https://gig-kavach.raghavbhatirv.in/).
 
 ---
 
@@ -79,4 +80,4 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 2. **Audit an Earnings Slip**: Click *"🛵 Swiggy Rain Fine"*. Point out how gross ₹1,250 drops to ₹60/hr after ₹350 rain fine and fuel.
 3. **1-Click Dispute Transition**: Click *"Draft Refund Dispute Notice"*. Show how the data flows automatically into the Dispute Drafter.
 4. **Export PDF Notice**: Select *"Tier 3: Labor Board Petition"*, click *"Download PDF"*, and show the generated formal petition with statutory citations.
-5. **Interactive Voice Co-pilot**: Click the orange microphone button at the bottom-right, ask a question in Hindi or English, and listen to Saathi respond aloud!
+5. **Interactive Voice Co-pilot**: Click the bottom-right *"मदद पूछें"* voice button, ask a question in Hindi or English, and listen to Gig Kavach respond aloud!

@@ -1,5 +1,5 @@
 /**
- * Saathi Design System Constants & Theme Tokens
+ * Gig Kavach Design System Constants & Theme Tokens
  * Color Palette: Ocean & Teal
  * Typography: Sora (Headings & Display) + Manrope (Body & UI)
  */

@@ -26,7 +26,7 @@ export interface TranslationStrings {
 
 export const translations: Record<Language, TranslationStrings> = {
   en: {
-    appName: "Saathi (साथी)",
+    appName: "Gig Kavach (गिग कवच)",
     tagline: "Your AI Guardian & Advocate for Gig & Daily Wage Rights",
     selectPersona: "Select Your Work",
     personas: {
@@ -41,15 +41,15 @@ export const translations: Record<Language, TranslationStrings> = {
       docs: "Document Explainer",
       safety: "Safety & SOS",
     },
-    voiceButtonStart: "Speak to Saathi",
+    voiceButtonStart: "Speak to Gig Kavach",
     voiceButtonStop: "Stop Listening",
     voiceListening: "Listening... speak now in your own language",
     audioPlay: "Listen in Voice",
     audioStop: "Stop Audio",
   },
   hi: {
-    appName: "साथी (Saathi)",
-    tagline: "गिग और दैनिक वेतन श्रमिकों के अधिकारों का AI रक्षक",
+    appName: "गिग कवच (Gig Kavach)",
+    tagline: "गिग और दैनिक वेतन श्रमिकों के अधिकारों का AI सुरक्षा कवच",
     selectPersona: "अपना काम चुनें",
     personas: {
       delivery: "डिलीवरी पार्टनर (Swiggy / Zomato / Zepto)",
@@ -63,15 +63,15 @@ export const translations: Record<Language, TranslationStrings> = {
       docs: "दस्तावेज़ समझें",
       safety: "सुरक्षा और SOS",
     },
-    voiceButtonStart: "साथी से बोलकर पूछें",
+    voiceButtonStart: "गिग कवच से बोलकर पूछें",
     voiceButtonStop: "सुनना बंद करें",
     voiceListening: "सुन रहे हैं... अपनी भाषा में बोलिए",
     audioPlay: "आवाज़ में सुनें",
     audioStop: "आवाज़ रोकें",
   },
   hinglish: {
-    appName: "Saathi (साथी)",
-    tagline: "Aapka Pocket AI Advocate - Kamai, Rights aur Safety ke liye",
+    appName: "Gig Kavach (गिग कवच)",
+    tagline: "Aapka Pocket AI Suraksha Kavach - Kamai, Rights aur Safety ke liye",
     selectPersona: "Apna Kaam Choose Karein",
     personas: {
       delivery: "Delivery Partner (Swiggy / Zomato / Zepto)",
@@ -85,14 +85,14 @@ export const translations: Record<Language, TranslationStrings> = {
       docs: "Paperwork & Notice Explainer",
       safety: "Safety & Emergency SOS",
     },
-    voiceButtonStart: "Bolkar Baat Karein",
+    voiceButtonStart: "Gig Kavach se Baat Karein",
     voiceButtonStop: "Stop Karein",
     voiceListening: "Sun rahe hain... boliye kya problem hai",
     audioPlay: "Voice me Sunein",
     audioStop: "Stop Audio",
   },
   ta: {
-    appName: "சாத்தி (Saathi)",
+    appName: "கிக் கவச் (Gig Kavach)",
     tagline: "கிக் & தினக்கூலி தொழிலாளர்களுக்கான AI பாதுகாவலர்",
     selectPersona: "உங்கள் பணியைத் தேர்ந்தெடுக்கவும்",
     personas: {
@@ -114,7 +114,7 @@ export const translations: Record<Language, TranslationStrings> = {
     audioStop: "நிறுத்து",
   },
   te: {
-    appName: "సాథీ (Saathi)",
+    appName: "గిగ్ కవచ్ (Gig Kavach)",
     tagline: "గిగ్ & దినసరి వేతన కార్మికుల హక్కుల AI రక్షకుడు",
     selectPersona: "మీ పనిని ఎంచుకోండి",
     personas: {
@@ -136,7 +136,7 @@ export const translations: Record<Language, TranslationStrings> = {
     audioStop: "ఆపండి",
   },
   kn: {
-    appName: "ಸಾಥಿ (Saathi)",
+    appName: "ಗಿಗ್ ಕವಚ್ (Gig Kavach)",
     tagline: "ಗಿಗ್ & ದಿನಗೂಲಿ ಕಾರ್ಮಿಕರ ಹಕ್ಕುಗಳ AI ರಕ್ಷಕ",
     selectPersona: "ನಿಮ್ಮ ಕೆಲಸವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
     personas: {
@@ -158,8 +158,8 @@ export const translations: Record<Language, TranslationStrings> = {
     audioStop: "ನಿಲ್ಲಿಸಿ",
   },
   bn: {
-    appName: "সাথী (Saathi)",
-    tagline: "গিগ ও দিনমজুর শ্রমিকদের অধিকারের AI রক্ষক",
+    appName: "গিগ কবচ (Gig Kavach)",
+    tagline: "গিগ ও দিনমজুর শ্রমিকদের অধিকারের AI সুরক্ষা কবচ",
     selectPersona: "আপনার পেশা বেছে নিন",
     personas: {
       delivery: "ডেলিভারি পার্টনার (Swiggy / Zomato)",

@@ -103,6 +103,14 @@ export async function POST(req: NextRequest) {
       token,
     });
 
+    response.cookies.set('gig_kavach_session', token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      secure: process.env.NODE_ENV === 'production',
+    });
+
     response.cookies.set('saathi_session', token, {
       path: '/',
       httpOnly: true,

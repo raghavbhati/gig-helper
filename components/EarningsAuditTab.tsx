@@ -36,7 +36,7 @@ interface EarningsAuditTabProps {
   onOpenAuthModal?: (mode?: 'login' | 'signup') => void;
 }
 
-const STORAGE_KEY = 'saathi_earnings_log';
+const STORAGE_KEY = 'gig_kavach_earnings_log';
 
 export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
   language,
@@ -60,11 +60,14 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
   const [customText, setCustomText] = useState('');
   const [uploadedImageName, setUploadedImageName] = useState<string | null>(null);
 
+  const DEMO_PHONE = '7737309096';
+  const isDemoOrGuest = !user || user.phoneNumber === DEMO_PHONE;
+
   // Initialize and pull from LocalStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('saathi_earnings_log');
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -73,9 +76,11 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
             return;
           }
         }
-        // First time on device: seed with sample presets
-        setSavedLogs(sampleEarningsPresets);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleEarningsPresets));
+        // Only seed sample data for guests / demo user, not real users
+        if (isDemoOrGuest) {
+          setSavedLogs(sampleEarningsPresets);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleEarningsPresets));
+        }
       } catch (err) {
         console.error('Error reading localStorage:', err);
       }
@@ -303,15 +308,15 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
       )}
 
       {/* Top Banner & Quick Presets */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e2ece9]">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 flex flex-wrap items-center gap-2">
-              <DollarSign className="w-5 h-5 text-orange-600" aria-hidden="true" />
+            <h2 className="text-lg font-heading font-bold text-[#102a24] flex flex-wrap items-center gap-2">
+              <DollarSign className="w-5 h-5 text-[#0d9488]" aria-hidden="true" />
               <span>Earnings & Unfair Deduction Auditor</span>
               {user ? (
-                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border border-emerald-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs bg-[#ccfbf1] text-[#0f766e] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border border-[#99f6e4]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] animate-pulse" />
                   <span>✓ D1 Cloud Synced ({user.name})</span>
                 </span>
               ) : (
@@ -320,14 +325,14 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
                   onClick={() => onOpenAuthModal && onOpenAuthModal('signup')}
                   title="यह केवल डेमो है, डेटा सेव नहीं हो रहा है। खाता बनाने के लिए क्लिक करें।"
                   aria-label="डेमो मोड: डेटा स्थायी रूप से सुरक्षित नहीं है। खाता बनाने के लिए क्लिक करें।"
-                  className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border border-amber-300 transition cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="text-xs bg-[#fef3c7] hover:bg-[#fde68a] text-[#92400e] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 border border-[#fde68a] transition cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                  <span>⚠️ डेमो मोड: डेटा सुरक्षित नहीं — <span className="underline font-black text-amber-950">खाता बनाएं (Create Account)</span></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#d97706] animate-ping" />
+                  <span>⚠️ डेमो मोड: डेटा सुरक्षित नहीं — <span className="underline font-black text-[#78350f]">खाता बनाएं (Create Account)</span></span>
                 </button>
               )}
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[#5a736d] mt-1">
               Audit your delivery slips, calculate real take-home cash, and automatically save shift payouts to your personal device history.
             </p>
           </div>
@@ -335,7 +340,7 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowManualForm(!showManualForm)}
-              className="px-3.5 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+              className="px-3.5 py-2 bg-[#0d9488] hover:bg-[#0f766e] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>{showManualForm ? 'Hide Shift Form' : '+ Log Shift Details'}</span>
@@ -345,68 +350,68 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
 
         {/* Manual Input Box */}
         {showManualForm && (
-          <div className="mt-4 pt-4 border-t border-slate-100 bg-orange-50/60 p-4 rounded-xl border border-orange-100 space-y-3 animate-fadeIn">
+          <div className="mt-4 pt-4 border-t border-[#e2ece9] bg-[#f4fbf8] p-4 rounded-xl border border-[#cfe9e1] space-y-3 animate-fadeIn">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-xs text-orange-950 uppercase tracking-wide flex items-center gap-1.5">
-                <Save className="w-3.5 h-3.5 text-orange-600" />
+              <h3 className="font-bold text-xs text-[#0f766e] uppercase tracking-wide flex items-center gap-1.5">
+                <Save className="w-3.5 h-3.5 text-[#0d9488]" />
                 <span>Log Shift Payout (अपनी शिफ्ट की कमाई दर्ज करें)</span>
               </h3>
-              <span className="text-[10px] text-slate-500 font-medium">Calculations & deductions are saved to your shift history</span>
+              <span className="text-[10px] text-[#718882] font-medium">Calculations & deductions are saved to your shift history</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Company / Platform</label>
+                <label className="font-semibold text-[#102a24] block mb-1">Company / Platform</label>
                 <input
                   type="text"
                   value={inputPlatform}
                   onChange={(e) => setInputPlatform(e.target.value)}
                   placeholder="Swiggy, Uber, Zepto..."
-                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-medium focus:ring-2 focus:ring-orange-500"
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-[#d1deda] font-medium focus:ring-2 focus:ring-[#0d9488] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Gross Payout (₹)</label>
+                <label className="font-semibold text-[#102a24] block mb-1">Gross Payout (₹)</label>
                 <input
                   type="number"
                   value={inputGross}
                   onChange={(e) => setInputGross(e.target.value)}
                   placeholder="1450"
-                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500"
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-[#d1deda] font-bold text-[#102a24] focus:ring-2 focus:ring-[#0d9488] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Active Hours</label>
+                <label className="font-semibold text-[#102a24] block mb-1">Active Hours</label>
                 <input
                   type="number"
                   value={inputHours}
                   onChange={(e) => setInputHours(e.target.value)}
                   placeholder="10"
-                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-medium focus:ring-2 focus:ring-orange-500"
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-[#d1deda] font-medium focus:ring-2 focus:ring-[#0d9488] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Unfair Deduction (₹)</label>
+                <label className="font-semibold text-[#102a24] block mb-1">Unfair Deduction (₹)</label>
                 <input
                   type="number"
                   value={inputPenalty}
                   onChange={(e) => setInputPenalty(e.target.value)}
                   placeholder="350"
-                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-rose-600 focus:ring-2 focus:ring-orange-500"
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-[#d1deda] font-bold text-rose-600 focus:ring-2 focus:ring-[#0d9488] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Deduction Reason</label>
+                <label className="font-semibold text-[#102a24] block mb-1">Deduction Reason</label>
                 <input
                   type="text"
                   value={inputPenaltyReason}
                   onChange={(e) => setInputPenaltyReason(e.target.value)}
                   placeholder="Rain delay, cancellation..."
-                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-medium focus:ring-2 focus:ring-orange-500"
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-[#d1deda] font-medium focus:ring-2 focus:ring-[#0d9488] focus:outline-none"
                 />
               </div>
             </div>
@@ -414,7 +419,7 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
             <div className="flex justify-end pt-1">
               <button
                 onClick={handleSaveShiftPayout}
-                className="px-5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                className="px-5 py-2.5 bg-[#0d9488] hover:bg-[#0f766e] text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Save className="w-4 h-4 text-white" />
                 <span>Save & Audit Shift (शिफ्ट सेव और जांचें)</span>
@@ -424,16 +429,16 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
         )}
 
         {/* Upload Drop Zone & AI Quick Text Input */}
-        <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="mt-4 pt-4 border-t border-[#e2ece9] grid grid-cols-1 md:grid-cols-2 gap-3">
           
           {/* File Upload Button */}
-          <label className="border-2 border-dashed border-slate-300 hover:border-orange-500 rounded-xl p-3 flex items-center justify-center gap-3 cursor-pointer bg-slate-50 hover:bg-orange-50/40 transition group">
-            <Upload className="w-5 h-5 text-slate-400 group-hover:text-orange-600" />
+          <label className="border-2 border-dashed border-[#cfe9e1] hover:border-[#0d9488] rounded-xl p-3 flex items-center justify-center gap-3 cursor-pointer bg-[#f4fbf8] hover:bg-[#e6f5f0] transition group">
+            <Upload className="w-5 h-5 text-[#718882] group-hover:text-[#0d9488]" />
             <div className="text-left">
-              <div className="text-xs font-bold text-slate-700 group-hover:text-orange-700">
+              <div className="text-xs font-bold text-[#102a24] group-hover:text-[#0f766e]">
                 {uploadedImageName ? `Uploaded: ${uploadedImageName}` : 'Upload App Screenshot or Daily Slip'}
               </div>
-              <div className="text-[11px] text-slate-400">Multimodal OCR auto-extracts and saves to device</div>
+              <div className="text-[11px] text-[#718882]">Multimodal OCR auto-extracts and saves to device</div>
             </div>
             <input
               type="file"
@@ -450,14 +455,14 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
               value={customText}
               onChange={(e) => setCustomText(e.target.value)}
               placeholder="Or type/paste: 'Swiggy shift 11 hrs, gross 1250, cut 350 penalty'"
-              className="flex-1 bg-slate-50 text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex-1 bg-[#f4fbf8] text-xs px-3 py-2 rounded-xl border border-[#d1deda] focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
             />
             <button
               onClick={handleSimulateCustomAudit}
               disabled={isAnalyzing}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 shadow-md"
+              className="px-4 py-2 bg-[#0d3830] hover:bg-[#0a2e27] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 shadow-md"
             >
-              <Sparkles className={`w-3.5 h-3.5 text-amber-400 ${isAnalyzing ? 'animate-spin' : ''}`} />
+              <Sparkles className={`w-3.5 h-3.5 text-[#5eead4] ${isAnalyzing ? 'animate-spin' : ''}`} />
               <span>{isAnalyzing ? 'Auditing with AI...' : 'AI Audit'}</span>
             </button>
           </div>
@@ -521,27 +526,27 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
           </div>
 
           {/* Real Hourly Wage Comparison Gauge */}
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-5 shadow-lg border border-slate-700">
+          <div className="bg-[#0d3830] text-white rounded-2xl p-5 shadow-lg border border-[#174a40]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <span className="text-xs font-semibold text-orange-400 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-[#5eead4] uppercase tracking-wider">
                   The True Bottomline
                 </span>
                 <h3 className="text-2xl font-black text-white mt-0.5 flex items-baseline gap-2">
                   ₹{currentRecord.netPay}
-                  <span className="text-sm font-normal text-slate-300">
+                  <span className="text-sm font-normal text-[#cfe9e1]">
                     Net Take-Home (Real Pocket Cash)
                   </span>
                 </h3>
               </div>
 
               {/* Hourly Wage Badge */}
-              <div className="bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2.5 text-right sm:text-right">
-                <div className="text-[11px] text-slate-400">Your Real Hourly Wage</div>
-                <div className={`text-xl font-black ${isBelowMinWage ? 'text-rose-400' : 'text-emerald-400'}`}>
+              <div className="bg-[#0a2e27] border border-[#174a40] rounded-xl px-4 py-2.5 text-right sm:text-right">
+                <div className="text-[11px] text-[#cfe9e1]">Your Real Hourly Wage</div>
+                <div className={`text-xl font-black ${isBelowMinWage ? 'text-rose-400' : 'text-[#2dd4bf]'}`}>
                   ₹{currentRecord.realHourlyWage.toFixed(1)} / hr
                 </div>
-                <div className="text-[10px] text-slate-400">
+                <div className="text-[10px] text-[#718882]">
                   Govt Min Wage: ₹{currentRecord.statutoryMinHourlyWage} / hr
                 </div>
               </div>
@@ -549,7 +554,7 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
 
             {/* Warning if below minimum wage */}
             {isBelowMinWage && (
-              <div className="mt-4 pt-3 border-t border-slate-700/80 flex items-center gap-2 text-xs text-rose-300 font-medium">
+              <div className="mt-4 pt-3 border-t border-[#174a40] flex items-center gap-2 text-xs text-rose-300 font-medium">
                 <TrendingDown className="w-4 h-4 text-rose-400 shrink-0" />
                 <span>
                   Alert: Due to deductions, your effective earnings are <strong>{Math.round(((currentRecord.statutoryMinHourlyWage - currentRecord.realHourlyWage) / currentRecord.statutoryMinHourlyWage) * 100)}% below statutory minimum wage</strong>.
@@ -559,21 +564,21 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
           </div>
 
           {/* Plain Language Vernacular Breakdown */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+          <div className="bg-white rounded-2xl p-5 border border-[#e2ece9] shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+              <h4 className="font-heading font-bold text-sm text-[#102a24] flex items-center gap-2">
                 <span>Vernacular Plain Language Explanation</span>
               </h4>
               <button
                 onClick={speakExplanation}
-                className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 border border-orange-200 transition"
+                className="text-xs bg-[#ccfbf1] hover:bg-[#99f6e4] text-[#0f766e] font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 border border-[#99f6e4] transition"
               >
                 <Volume2 className="w-3.5 h-3.5" />
                 <span>Listen in Voice</span>
               </button>
             </div>
 
-            <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <p className="text-sm text-[#4a5f59] leading-relaxed bg-[#f4fbf8] p-3.5 rounded-xl border border-[#e2ece9]">
               {language === 'en' ? currentRecord.explanationEnglish : currentRecord.explanationHindi}
             </p>
           </div>
@@ -583,7 +588,7 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
         {/* Right Col: Discrepancy & 1-Click Action to Dispute Drafter */}
         <div className="space-y-4">
           
-          <div className="bg-gradient-to-b from-rose-50 to-orange-50 rounded-2xl p-5 border-2 border-rose-200 shadow-sm flex flex-col justify-between">
+          <div className="bg-gradient-to-b from-rose-50 to-[#f4fbf8] rounded-2xl p-5 border-2 border-rose-200 shadow-sm flex flex-col justify-between">
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
                 <AlertTriangle className="w-4 h-4 text-rose-600" />
@@ -612,12 +617,12 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
                     orderId: 'SW-9481',
                   })
                 }
-                className="w-full bg-gradient-to-r from-orange-600 to-rose-600 hover:from-orange-500 hover:to-rose-500 text-white font-extrabold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-lg shadow-orange-600/30 flex items-center justify-center gap-2 transition group"
+                className="w-full bg-[#0d9488] hover:bg-[#0f766e] text-white font-extrabold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-md shadow-[#0d9488]/30 flex items-center justify-center gap-2 transition group active:scale-[0.98]"
               >
                 <span>Draft Refund Dispute Notice</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-              <p className="text-[10px] text-center text-slate-500 mt-2">
+              <p className="text-[10px] text-center text-[#5a736d] mt-2">
                 1-click transfers evidence to official grievance petition
               </p>
             </div>
@@ -625,9 +630,9 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
           </div>
 
           {/* Quick Tip Card */}
-          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 text-xs text-slate-600 space-y-1.5">
-            <div className="font-bold text-slate-800 flex items-center gap-1.5">
-              <HelpCircle className="w-4 h-4 text-orange-500" />
+          <div className="bg-[#f4fbf8] rounded-2xl p-4 border border-[#e2ece9] text-xs text-[#4a5f59] space-y-1.5">
+            <div className="font-bold text-[#102a24] flex items-center gap-1.5">
+              <HelpCircle className="w-4 h-4 text-[#0f766e]" />
               <span>Did You Know?</span>
             </div>
             <p className="leading-relaxed">
@@ -640,34 +645,34 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
       </div>
 
       {/* Persistent LocalStorage Earnings History Log Table */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl p-5 border border-[#e2ece9] shadow-sm space-y-4">
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#e2ece9]">
           <div>
-            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-              <History className="w-4 h-4 text-orange-600" />
+            <h3 className="font-heading font-bold text-sm text-[#102a24] flex items-center gap-2">
+              <History className="w-4 h-4 text-[#0f766e]" />
               <span>Device Saved Earnings Log ({savedLogs.length} Shifts Recorded)</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[#5a736d] mt-0.5">
               Saved in browser LocalStorage. Click any row to load into auditor or draft dispute.
             </p>
           </div>
 
           {/* Cumulative Totals Bar */}
-          <div className="flex flex-wrap items-center gap-3 text-xs bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
+          <div className="flex flex-wrap items-center gap-3 text-xs bg-[#f4fbf8] px-3.5 py-1.5 rounded-xl border border-[#e2ece9]">
             <div>
-              <span className="text-slate-400">Total Gross: </span>
-              <span className="font-extrabold text-slate-800">₹{totalGrossSaved}</span>
+              <span className="text-[#718882]">Total Gross: </span>
+              <span className="font-extrabold text-[#102a24]">₹{totalGrossSaved}</span>
             </div>
-            <div className="text-slate-300">|</div>
+            <div className="text-[#d1deda]">|</div>
             <div>
-              <span className="text-slate-400">Penalties Withheld: </span>
+              <span className="text-[#718882]">Penalties Withheld: </span>
               <span className="font-extrabold text-rose-600">₹{totalPenaltiesSaved}</span>
             </div>
-            <div className="text-slate-300">|</div>
+            <div className="text-[#d1deda]">|</div>
             <div>
-              <span className="text-slate-400">Total Net: </span>
-              <span className="font-extrabold text-emerald-600">₹{totalNetSaved}</span>
+              <span className="text-[#718882]">Total Net: </span>
+              <span className="font-extrabold text-[#0f766e]">₹{totalNetSaved}</span>
             </div>
           </div>
         </div>
@@ -676,7 +681,7 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-400 font-semibold uppercase text-[10px]">
+              <tr className="border-b border-[#e2ece9] text-[#718882] font-semibold uppercase text-[10px]">
                 <th className="py-2.5 px-3">Date / Shift</th>
                 <th className="py-2.5 px-3">Platform</th>
                 <th className="py-2.5 px-3">Gross Pay</th>
@@ -687,7 +692,7 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
                 <th className="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
+            <tbody className="divide-y divide-[#edf4f1] font-medium">
               {savedLogs.map((log) => {
                 const isSelected = currentRecord.id === log.id;
                 return (
@@ -703,14 +708,14 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
                         handleSelectPresetOrLog(log);
                       }
                     }}
-                    className={`cursor-pointer transition hover:bg-orange-50/50 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-lg ${
-                      isSelected ? 'bg-orange-50/80 font-bold' : ''
+                    className={`cursor-pointer transition hover:bg-[#f4fbf8] focus:outline-none focus:ring-2 focus:ring-[#0d9488] rounded-lg ${
+                      isSelected ? 'bg-[#e6f5f0] font-bold' : ''
                     }`}
                   >
-                    <td className="py-3 px-3 text-slate-800 whitespace-nowrap">
+                    <td className="py-3 px-3 text-[#102a24] whitespace-nowrap">
                       {log.date}
                       {isSelected && (
-                        <span className="ml-1.5 text-[9px] bg-orange-600 text-white px-1.5 py-0.2 rounded font-bold">
+                        <span className="ml-1.5 text-[9px] bg-[#0f766e] text-white px-1.5 py-0.2 rounded font-bold">
                           ACTIVE
                         </span>
                       )}

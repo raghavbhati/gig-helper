@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       deductionAmount = '350',
     } = await req.json();
 
-    const systemPrompt = `You are Saathi-AI, a legal advocacy assistant for gig and unorganized informal workers.
+    const systemPrompt = `You are Gig Kavach AI, a legal advocacy assistant and protective armor for gig and unorganized informal workers.
 Generate a multi-tier dispute escalation bundle for the following incident:
 Platform: ${platformName}
 Worker: ${workerName} (${workerPhone}, ${workerPersona})

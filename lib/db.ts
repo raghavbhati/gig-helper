@@ -1,4 +1,4 @@
-// Cloudflare D1 & Local SQLite Database Bridge for Saathi
+// Cloudflare D1 & Local SQLite Database Bridge for Gig Kavach
 
 import path from 'path';
 import fs from 'fs';
@@ -73,7 +73,11 @@ export function getDatabase(cloudflareEnv?: { DB?: any }): D1DatabaseInterface {
       if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
       }
-      const dbPath = path.join(dataDir, 'saathi.sqlite');
+      const legacyPath = path.join(dataDir, 'saathi.sqlite');
+      const dbPath = path.join(dataDir, 'gig_kavach.sqlite');
+      if (!fs.existsSync(dbPath) && fs.existsSync(legacyPath)) {
+        try { fs.copyFileSync(legacyPath, dbPath); } catch {}
+      }
       localDbInstance = new DatabaseSync(dbPath);
       localDbInstance.exec(SCHEMA_SQL);
     } catch (err) {

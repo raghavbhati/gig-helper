@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const token =
+      req.cookies.get('gig_kavach_session')?.value ||
       req.cookies.get('saathi_session')?.value ||
       req.headers.get('authorization')?.replace('Bearer ', '');
 

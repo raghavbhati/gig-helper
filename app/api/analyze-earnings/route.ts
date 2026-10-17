@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const { imageBase64, textInput, persona = 'delivery' } = await req.json();
 
-    const systemPrompt = `You are Saathi-AI, an expert financial auditor for gig and informal workers (delivery riders, drivers, daily-wage laborers).
+    const systemPrompt = `You are Gig Kavach AI, an expert financial auditor for gig and informal workers (delivery riders, drivers, daily-wage laborers).
 Analyze the provided earnings screenshot or text.
 Extract or calculate:
 - grossPay (number)

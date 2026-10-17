@@ -4,15 +4,10 @@ import React from 'react';
 import { translations, Language, Persona } from '@/lib/translations';
 import { User } from '@/lib/auth';
 import {
-  Bike,
-  Car,
-  Hammer,
-  Globe,
-  Volume2,
   ShieldAlert,
-  UserCheck,
   LogIn,
   LogOut,
+  Languages,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -26,7 +21,19 @@ interface HeaderProps {
   onOpenAuthModal?: () => void;
   onLogout?: () => void;
   isSyncing?: boolean;
+  onTriggerSOS?: () => void;
 }
+
+const LANGUAGE_LABELS: Record<Language, string> = {
+  hi: 'हिंदी',
+  en: 'English',
+  hinglish: 'Hinglish',
+  ta: 'தமிழ்',
+  te: 'తెలుగు',
+  kn: 'ಕನ್ನಡ',
+  bn: 'বাংলা',
+};
+
 
 export const Header: React.FC<HeaderProps> = ({
   language,
@@ -39,169 +46,115 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuthModal,
   onLogout,
   isSyncing,
+  onTriggerSOS,
 }) => {
   const t = translations[language] || translations.en;
 
   return (
-    <header className="bg-slate-900 text-white shadow-xl border-b border-slate-800 sticky top-0 z-40">
-      <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          
-          {/* Logo & Tagline */}
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/30 text-white font-black text-xl">
-                सा
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                  {t.appName}
-                  <span className="text-xs bg-orange-500/20 text-orange-400 font-semibold px-2 py-0.5 rounded-full border border-orange-500/30">
-                    GenAI Guardian
-                  </span>
-                </h1>
-                <p className="text-xs text-slate-400 line-clamp-1">{t.tagline}</p>
-              </div>
-            </div>
+    <header className="bg-white/95 backdrop-blur-md text-[#102a24] shadow-xs border-b border-[#e2ece9] sticky top-0 z-40">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
 
-            {/* Quick Voice Mic Button on Mobile */}
-            <button
-              onClick={onOpenVoiceModal}
-              className={`sm:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                isVoiceActive
-                  ? 'bg-rose-600 text-white animate-pulse'
-                  : 'bg-orange-600 hover:bg-orange-500 text-white'
-              }`}
-            >
-              <Volume2 className="w-3.5 h-3.5" />
-              <span>Voice</span>
-            </button>
+        {/* ──── Single Row ──── */}
+        <div className="flex items-center justify-between gap-2">
+
+          {/* Left: Brand */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#0f766e] flex items-center justify-center shadow-sm text-white font-heading font-extrabold text-xl sm:text-2xl tracking-wide shrink-0">
+              {language === 'en' ? 'GK' : 'गि'}
+            </div>
+            <div className="leading-tight min-w-0">
+              <h1 className="text-lg sm:text-xl font-heading font-black tracking-tight text-[#102a24] flex items-center gap-2">
+                <span className="truncate">{language === 'en' ? 'Gig Kavach' : 'गिग कवच'}</span>
+                <span className="hidden sm:inline-block text-[11px] bg-[#ccfbf1] text-[#0f766e] font-sans font-bold px-2 py-0.5 rounded-full border border-[#99f6e4] whitespace-nowrap">
+                  AI Co-pilot
+                </span>
+              </h1>
+              <p className="text-[11px] text-[#5a736d] font-sans font-medium truncate hidden sm:block">
+                {language === 'en' ? 'Your trusted armor & AI guardian' : 'काम में आपका भरोसेमंद सुरक्षा कवच'}
+              </p>
+            </div>
           </div>
 
-          {/* Right Controls: Persona & Language Switcher & Voice */}
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-            
-            {/* Persona Switcher */}
-            <div role="toolbar" aria-label="Worker Persona Selector" className="bg-slate-800/90 p-1 rounded-xl flex items-center gap-1 border border-slate-700 text-xs">
-              <button
-                onClick={() => onPersonaChange('delivery')}
-                aria-pressed={persona === 'delivery'}
-                aria-label="Select Delivery Partner persona"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all ${
-                  persona === 'delivery'
-                    ? 'bg-orange-600 text-white shadow'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-                title="Delivery Partner"
-              >
-                <Bike className="w-3.5 h-3.5" aria-hidden="true" />
-                <span className="hidden md:inline">Delivery</span>
-              </button>
 
-              <button
-                onClick={() => onPersonaChange('driver')}
-                aria-pressed={persona === 'driver'}
-                aria-label="Select Cab and Auto Driver persona"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all ${
-                  persona === 'driver'
-                    ? 'bg-orange-600 text-white shadow'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-                title="Cab / Auto Driver"
-              >
-                <Car className="w-3.5 h-3.5" aria-hidden="true" />
-                <span className="hidden md:inline">Driver</span>
-              </button>
 
-              <button
-                onClick={() => onPersonaChange('daily_wage')}
-                aria-pressed={persona === 'daily_wage'}
-                aria-label="Select Daily Wage and Construction Laborer persona"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition-all ${
-                  persona === 'daily_wage'
-                    ? 'bg-orange-600 text-white shadow'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-                title="Daily Wage / Construction"
-              >
-                <Hammer className="w-3.5 h-3.5" aria-hidden="true" />
-                <span className="hidden md:inline">Laborer</span>
-              </button>
-            </div>
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
             {/* Language Selector */}
             <div className="relative flex items-center">
-              <Globe className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+              <Languages className="w-3.5 h-3.5 text-[#0d9488] absolute left-2 pointer-events-none" />
               <select
                 value={language}
                 onChange={(e) => onLanguageChange(e.target.value as Language)}
                 aria-label="Select Language"
-                className="bg-slate-800 text-slate-200 text-xs font-semibold pl-8 pr-3 py-1.5 rounded-xl border border-slate-700 hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-500 cursor-pointer appearance-none"
+                className="bg-white text-[#102a24] text-xs font-bold pl-7 pr-2 sm:pr-6 py-1.5 sm:py-2 rounded-xl border border-[#d1deda] hover:border-[#0d9488] shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#0d9488] cursor-pointer appearance-none transition-all"
               >
+                <option value="hi">हिंदी</option>
                 <option value="en">English</option>
-                <option value="hi">हिंदी (Hindi)</option>
                 <option value="hinglish">Hinglish</option>
-                <option value="ta">தமிழ் (Tamil)</option>
-                <option value="te">తెలుగు (Telugu)</option>
-                <option value="kn">ಕನ್ನಡ (Kannada)</option>
-                <option value="bn">বাংলা (Bengali)</option>
+                <option value="ta">தமிழ்</option>
+                <option value="te">తెలుగు</option>
+                <option value="kn">ಕನ್ನಡ</option>
+                <option value="bn">বাংলা</option>
               </select>
+              <div className="pointer-events-none absolute right-1.5 text-[9px] text-[#718882] hidden sm:block">▼</div>
             </div>
 
-            {/* Desktop Voice Button */}
-            <button
-              onClick={onOpenVoiceModal}
-              aria-label={t.voiceButtonStart}
-              className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md ${
-                isVoiceActive
-                  ? 'bg-rose-600 text-white animate-pulse'
-                  : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-orange-600/20'
-              }`}
-            >
-              <Volume2 className="w-4 h-4" aria-hidden="true" />
-              <span>{t.voiceButtonStart}</span>
-            </button>
+            {/* SOS Emergency Button */}
+            {onTriggerSOS && (
+              <button
+                onClick={onTriggerSOS}
+                aria-label="Emergency SOS Alert"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-heading font-black text-white bg-[#dc2626] hover:bg-[#b91c1c] active:scale-95 transition-all shadow-sm shadow-red-600/30"
+                title="Emergency SOS & Night Safety Hotline"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
+                <span>SOS</span>
+              </button>
+            )}
 
-            {/* User Login / Cloud Account Status */}
+            {/* User Login / Account */}
             {user ? (
-              <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700/80 px-2.5 py-1 rounded-xl text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/30">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="hidden sm:block text-left leading-tight">
-                    <span className="font-bold text-slate-100 block text-[11px] max-w-[90px] truncate">{user.name}</span>
-                    <span className="text-[9px] text-emerald-400 font-mono flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      D1 Synced
-                    </span>
-                  </div>
+              <div className="flex items-center gap-1.5 bg-[#f4fbf8] border border-[#cfe9e1] px-2 sm:px-2.5 py-1 rounded-xl text-xs font-sans">
+                <div className="w-6 h-6 rounded-full bg-[#ccfbf1] text-[#0f766e] flex items-center justify-center font-bold text-xs border border-[#99f6e4]">
+                  {user.name.charAt(0).toUpperCase()}
                 </div>
-
+                <div className="hidden md:block text-left leading-tight">
+                  <span className="font-bold text-[#102a24] block text-[11px] max-w-[90px] truncate">{user.name}</span>
+                  <span className="text-[9px] text-[#0f766e] font-mono flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0d9488] animate-pulse" />
+                    D1 Cloud
+                  </span>
+                </div>
                 {onLogout && (
                   <button
                     onClick={onLogout}
                     aria-label="लॉगआउट करें (Log out)"
                     title="Logout"
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 transition focus:outline-none focus:ring-1 focus:ring-rose-500"
+                    className="p-1 rounded-lg text-[#718882] hover:text-[#dc2626] hover:bg-white transition focus:outline-none"
                   >
                     <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 )}
               </div>
             ) : (
-              <button
-                onClick={onOpenAuthModal}
-                aria-label="लॉगिन करें या नया खाता बनाएं (Login or Create Account)"
-                className="flex items-center gap-1.5 bg-orange-600/90 hover:bg-orange-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-sm border border-orange-500/50 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <LogIn className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>लॉगिन (Login)</span>
-              </button>
+              onOpenAuthModal && (
+                <button
+                  onClick={onOpenAuthModal}
+                  aria-label="लॉगिन करें या नया खाता बनाएं"
+                  className="flex items-center gap-1.5 bg-white hover:bg-[#f4fbf8] text-[#102a24] border border-[#d1deda] font-bold px-2.5 sm:px-3 py-1.5 rounded-xl text-xs transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-[#0d9488]" aria-hidden="true" />
+                  <span className="hidden sm:inline">लॉगिन</span>
+                </button>
+              )
             )}
           </div>
-
         </div>
+
+
+
+
       </div>
     </header>
   );

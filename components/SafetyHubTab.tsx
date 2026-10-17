@@ -80,11 +80,11 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
       </div>
 
       {/* Weather Safety Advisory Toggle */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e2ece9] space-y-4">
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-orange-600" aria-hidden="true" />
+          <h3 className="font-heading font-bold text-sm text-[#102a24] flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-[#0d9488]" aria-hidden="true" />
             <span>Shift Hazard & Climate Advisory</span>
           </h3>
 
@@ -93,10 +93,10 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
               onClick={() => setActiveWeatherMode('rain')}
               aria-pressed={activeWeatherMode === 'rain'}
               aria-label="Show Monsoon and Waterlogging Road Safety Protocol"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition border focus:outline-none focus:ring-2 focus:ring-[#0d9488] ${
                 activeWeatherMode === 'rain'
-                  ? 'bg-blue-600 text-white border-blue-600 shadow'
-                  : 'bg-slate-50 text-slate-600 border-slate-200'
+                  ? 'bg-[#0d3830] text-white border-[#0d3830] shadow-xs'
+                  : 'bg-[#f4fbf8] text-[#4a5f59] border-[#e2ece9]'
               }`}
             >
               <CloudRain className="w-3.5 h-3.5" aria-hidden="true" />
@@ -107,10 +107,10 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
               onClick={() => setActiveWeatherMode('heat')}
               aria-pressed={activeWeatherMode === 'heat'}
               aria-label="Show Severe Heatwave Advisory and Health Shield"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition border focus:outline-none focus:ring-2 focus:ring-[#0d9488] ${
                 activeWeatherMode === 'heat'
-                  ? 'bg-amber-600 text-white border-amber-600 shadow'
-                  : 'bg-slate-50 text-slate-600 border-slate-200'
+                  ? 'bg-[#0d3830] text-white border-[#0d3830] shadow-xs'
+                  : 'bg-[#f4fbf8] text-[#4a5f59] border-[#e2ece9]'
               }`}
             >
               <SunMedium className="w-3.5 h-3.5" aria-hidden="true" />
@@ -121,24 +121,24 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
 
         {/* Advisory Content */}
         {activeWeatherMode === 'rain' ? (
-          <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4 text-xs text-blue-950 space-y-2">
-            <div className="font-bold text-blue-900 flex items-center gap-1.5">
-              <CloudRain className="w-4 h-4 text-blue-600" aria-hidden="true" />
+          <div className="bg-[#f0fdfa] border border-[#ccfbf1] rounded-xl p-4 text-xs text-[#0f766e] space-y-2">
+            <div className="font-bold text-[#0f766e] flex items-center gap-1.5">
+              <CloudRain className="w-4 h-4 text-[#0d9488]" aria-hidden="true" />
               <span>Monsoon High-Risk Road Protocol:</span>
             </div>
-            <ul className="space-y-1.5 text-blue-900/90 pl-5 list-disc">
+            <ul className="space-y-1.5 text-[#134e4a] pl-5 list-disc">
               <li><strong>Increase Following Distance:</strong> Wet tarmac increases bike/car stopping distance by 2.5x. Avoid sudden hard braking on painted road markings and metal manhole covers.</li>
               <li><strong>Waterlogged Underpasses:</strong> Never drive through water levels above your silencer or wheel center. Hydrostatic engine lock will cost ₹15,000+ to repair and platforms do not compensate.</li>
               <li><strong>Platform Delay Evidence:</strong> If heavy rain delays an order, capture a 5-second video of the road blockage immediately. This exempts you from the ₹350 customer cancellation penalty.</li>
             </ul>
           </div>
         ) : (
-          <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 space-y-2">
-            <div className="font-bold text-amber-900 flex items-center gap-1.5">
-              <SunMedium className="w-4 h-4 text-amber-600" aria-hidden="true" />
+          <div className="bg-[#fef3c7] border border-[#fde68a] rounded-xl p-4 text-xs text-[#92400e] space-y-2">
+            <div className="font-bold text-[#92400e] flex items-center gap-1.5">
+              <SunMedium className="w-4 h-4 text-[#d97706]" aria-hidden="true" />
               <span>Extreme Heatwave Health Shield:</span>
             </div>
-            <ul className="space-y-1.5 text-amber-900/90 pl-5 list-disc">
+            <ul className="space-y-1.5 text-[#78350f] pl-5 list-disc">
               <li><strong>Mandatory ORS/Electrolyte intake:</strong> Pure water is not enough; drink lemon-salt or ORS every 90 minutes to prevent sudden fainting and heat exhaustion while riding.</li>
               <li><strong>Afternoon Throttle (1 PM - 4 PM):</strong> Rest under shade every 45 minutes. The Central Labor Ministry has issued directives asking platforms to restrict high-intensity delivery during peak red heatwave alerts.</li>
               <li><strong>Phone Overheating:</strong> Direct sunlight on phone mounts causes GPS failure and phone shutdowns. Keep a small shade canopy on your phone holder.</li>
@@ -149,35 +149,35 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
       </div>
 
       {/* On-Duty Accident Checklist & Platform Insurance Claim Guide */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e2ece9] space-y-4">
         <div>
-          <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+          <h3 className="font-heading font-bold text-sm text-[#102a24] flex items-center gap-2">
             <HeartPulse className="w-4 h-4 text-rose-600" aria-hidden="true" />
             <span>On-Duty Road Accident: 3-Step Legal & Insurance Checklist</span>
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-[#5a736d] mt-0.5">
             Most workers fail to claim their ₹2–5 Lakh group accident insurance because they miss the mandatory 24-hour notification window.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
           
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="font-bold text-slate-800 flex items-center gap-2">
+          <div className="p-4 rounded-xl bg-[#f8faf9] border border-[#e2ece9] space-y-2">
+            <div className="font-bold text-[#102a24] flex items-center gap-2">
               <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px]">1</span>
               <span>Hospital Admission (MLC)</span>
             </div>
-            <p className="text-slate-600 leading-relaxed">
+            <p className="text-[#4a5f59] leading-relaxed">
               Ensure the government or private hospital registers the case as Medico-Legal Case (MLC). Keep the emergency registration slip safe.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="font-bold text-slate-800 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-orange-600 text-white flex items-center justify-center text-[10px]">2</span>
+          <div className="p-4 rounded-xl bg-[#f8faf9] border border-[#e2ece9] space-y-2">
+            <div className="font-bold text-[#102a24] flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-[#0d9488] text-white flex items-center justify-center text-[10px]">2</span>
               <span>Notify Platform Helpline</span>
             </div>
-            <p className="text-slate-600 leading-relaxed">
+            <p className="text-[#4a5f59] leading-relaxed">
               Have a coworker or family member call platform SOS within 24 hours. Quote your active order number or trip ID to lock in shift coverage.
             </p>
           </div>

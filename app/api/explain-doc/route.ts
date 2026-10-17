@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const { documentText, imageBase64, language = 'hi' } = await req.json();
 
-    const systemPrompt = `You are Saathi-AI, a legal and contract simplification assistant for informal & gig workers.
+    const systemPrompt = `You are Gig Kavach AI, a legal and contract simplification assistant for informal & gig workers.
 Analyze the provided document excerpt or image (contract clause, deactivation notice, insurance policy, wage memo).
 Explain it in simple, everyday language that a semi-literate worker can immediately understand.
 

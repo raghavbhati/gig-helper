@@ -22,12 +22,12 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'saathi'; text: string }>>([
+  const [chatHistory, setChatHistory] = useState<Array<{ sender: 'user' | 'gig_kavach'; text: string }>>([
     {
-      sender: 'saathi',
+      sender: 'gig_kavach',
       text: language === 'en'
-        ? "Namaste! Speak or type your problem in your own language. I can audit your earnings, write dispute letters, or explain government welfare schemes."
-        : "नमस्ते साथी! अपनी भाषा में बोलकर या लिखकर बताइए। मैं आपकी कटी हुई पेनल्टी वापस पाने, कमाई चेक करने, या सरकारी बीमा समझने में मदद करूँगा।",
+        ? "Namaste! Speak or type your problem in your own language. I am Gig Kavach, your AI legal and financial guardian."
+        : "नमस्ते! अपनी भाषा में बोलकर या लिखकर बताइए। मैं गिग कवच (Gig Kavach) के रूप में आपकी कटी हुई पेनल्टी वापस पाने, कमाई चेक करने, या सरकारी बीमा समझने में मदद करूँगा।",
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -128,17 +128,17 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       const data = await res.json();
       const reply = data.reply || "आपकी बात समझ ली गई है।";
 
-      setChatHistory([...newHistory, { sender: 'saathi', text: reply }]);
+      setChatHistory([...newHistory, { sender: 'gig_kavach', text: reply }]);
       speakText(reply);
     } catch (err) {
       console.warn("API route unavailable, utilizing intelligent contextual offline fallback:", err);
       const lower = text.toLowerCase();
-      let fallbackReply = "नमस्ते साथी! मैं आपका कानूनी व वित्तीय साथी हूँ। आप कमाई की जांच, पेनल्टी विवाद, या सरकारी योजनाओं के बारे में कभी भी पूछ सकते हैं।";
+      let fallbackReply = "नमस्ते! मैं गिग कवच (Gig Kavach) - आपका कानूनी व वित्तीय सुरक्षा कवच हूँ। आप कमाई की जांच, पेनल्टी विवाद, या सरकारी योजनाओं के बारे में कभी भी पूछ सकते हैं।";
 
       if (lower.includes("penalty") || lower.includes("dispute") || lower.includes("cut") || lower.includes("refund") || lower.includes("पेनल्टी") || lower.includes("काट") || lower.includes("वापस")) {
         fallbackReply = language === 'en'
-          ? "Unfair penalty detected! Go to the 'Dispute Drafter' tab above. Saathi will generate a 3-tier grievance petition citing Indian Contract Act & Gig Worker Welfare Rules with an instant PDF download."
-          : "अनुचित पेनल्टी! ऊपर दिए गए 'Dispute Drafter' टैब पर जाएँ। साथी आपके लिए भारतीय अनुबंध अधिनियम के तहत 3-स्तरीय शिकायत पत्र और पीडीएफ तुरंत तैयार करेगा।";
+          ? "Unfair penalty detected! Go to the 'Dispute Drafter' tab above. Gig Kavach will generate a 3-tier grievance petition citing Indian Contract Act & Gig Worker Welfare Rules with an instant PDF download."
+          : "अनुचित पेनल्टी! ऊपर दिए गए 'Dispute Drafter' टैब पर जाएँ। गिग कवच आपके लिए भारतीय अनुबंध अधिनियम के तहत 3-स्तरीय शिकायत पत्र और पीडीएफ तुरंत तैयार करेगा।";
       } else if (lower.includes("shram") || lower.includes("welfare") || lower.includes("scheme") || lower.includes("insurance") || lower.includes("bima") || lower.includes("बीमा") || lower.includes("योजना")) {
         fallbackReply = language === 'en'
           ? "You are eligible for e-Shram (₹2 Lakh accidental cover) and Ayushman PM-JAY (₹5 Lakh health cover). Check the 'Welfare Schemes' tab to verify in 30 seconds."
@@ -156,7 +156,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       setChatHistory([
         ...newHistory,
         {
-          sender: 'saathi',
+          sender: 'gig_kavach',
           text: fallbackReply,
         },
       ]);
@@ -196,38 +196,38 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
       aria-labelledby="voice-assistant-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn"
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh] overflow-hidden text-slate-100">
+      <div className="bg-[#0d3830] border border-[#174a40] rounded-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh] overflow-hidden text-slate-100">
         
         {/* Header */}
-        <div className="p-4 bg-slate-800/80 border-b border-slate-700/60 flex items-center justify-between">
+        <div className="p-4 bg-[#0a2e27] border-b border-[#174a40] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center shadow-md">
-              <Sparkles className="w-4 h-4 text-white" aria-hidden="true" />
+            <div className="w-8 h-8 rounded-full bg-[#0f766e] flex items-center justify-center shadow-md">
+              <Sparkles className="w-4 h-4 text-[#99f6e4]" aria-hidden="true" />
             </div>
             <div>
-              <h3 id="voice-assistant-title" className="font-bold text-sm text-white flex items-center gap-2">
-                Saathi Voice Co-pilot
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
+              <h3 id="voice-assistant-title" className="font-heading font-bold text-sm text-white flex items-center gap-2">
+                Gig Kavach Voice Co-pilot
+                <span className="text-[10px] bg-[#ccfbf1] text-[#0f766e] px-1.5 py-0.5 rounded font-mono font-bold">
                   LIVE
                 </span>
               </h3>
-              <p className="text-xs text-slate-400">Speak or listen in your vernacular dialect</p>
+              <p className="text-xs text-[#cfe9e1]">Speak or listen in your vernacular dialect</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => speakText(chatHistory[chatHistory.length - 1]?.text || '')}
-              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="p-2 rounded-xl bg-[#0d3830] hover:bg-[#114a40] text-[#99f6e4] hover:text-white transition focus:outline-none focus:ring-2 focus:ring-[#0d9488] border border-[#174a40]"
               title={isSpeaking ? "Stop Voice" : "Listen aloud"}
               aria-label={isSpeaking ? "Stop Voice playback" : "Listen aloud to latest assistant response"}
             >
-              {isSpeaking ? <VolumeX className="w-4 h-4 text-rose-400" aria-hidden="true" /> : <Volume2 className="w-4 h-4 text-orange-400" aria-hidden="true" />}
+              {isSpeaking ? <VolumeX className="w-4 h-4 text-rose-400" aria-hidden="true" /> : <Volume2 className="w-4 h-4 text-[#5eead4]" aria-hidden="true" />}
             </button>
             <button
               onClick={onClose}
               aria-label="Close Voice Assistant dialog"
-              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-400 hover:text-white transition focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="p-2 rounded-xl bg-[#0d3830] hover:bg-[#114a40] text-[#a7d7cb] hover:text-white transition focus:outline-none focus:ring-2 focus:ring-[#0d9488] border border-[#174a40]"
             >
               <X className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -235,7 +235,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         </div>
 
         {/* Chat History Box */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-3 text-sm">
+        <div className="flex-1 p-4 overflow-y-auto space-y-3 text-sm bg-[#0a2e27]/60">
           {chatHistory.map((msg, idx) => (
             <div
               key={idx}
@@ -244,18 +244,18 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
               <div
                 className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 shadow-sm leading-relaxed ${
                   msg.sender === 'user'
-                    ? 'bg-orange-600 text-white rounded-br-none'
-                    : 'bg-slate-800 text-slate-200 border border-slate-700/70 rounded-bl-none'
+                    ? 'bg-[#0d9488] text-white rounded-br-none font-medium'
+                    : 'bg-[#0d3830] text-[#f4fbf8] border border-[#174a40] rounded-bl-none'
                 }`}
               >
                 {msg.text}
               </div>
 
-              {msg.sender === 'saathi' && (
+              {msg.sender === 'gig_kavach' && (
                 <div className="flex items-center gap-2 mt-1 px-1">
                   <button
                     onClick={() => speakText(msg.text)}
-                    className="text-[11px] text-orange-400 hover:text-orange-300 flex items-center gap-1 font-medium"
+                    className="text-[11px] text-[#5eead4] hover:text-white flex items-center gap-1 font-medium"
                   >
                     <Volume2 className="w-3 h-3" />
                     <span>Listen</span>
@@ -266,7 +266,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
                         onTransferToDispute(chatHistory[idx - 1]?.text || msg.text);
                         onClose();
                       }}
-                      className="text-[11px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-medium underline"
+                      className="text-[11px] text-[#2dd4bf] hover:text-white flex items-center gap-1 font-medium underline"
                     >
                       Draft Dispute Form →
                     </button>
@@ -277,23 +277,23 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
           ))}
 
           {isLoading && (
-            <div className="flex items-center gap-2 text-xs text-orange-400 py-1 font-medium">
-              <div className="w-2 h-2 rounded-full bg-orange-400 animate-bounce" />
-              <div className="w-2 h-2 rounded-full bg-orange-400 animate-bounce [animation-delay:0.2s]" />
-              <div className="w-2 h-2 rounded-full bg-orange-400 animate-bounce [animation-delay:0.4s]" />
-              <span>Saathi is thinking in {language}...</span>
+            <div className="flex items-center gap-2 text-xs text-[#5eead4] py-1 font-medium">
+              <div className="w-2 h-2 rounded-full bg-[#2dd4bf] animate-bounce" />
+              <div className="w-2 h-2 rounded-full bg-[#2dd4bf] animate-bounce [animation-delay:0.2s]" />
+              <div className="w-2 h-2 rounded-full bg-[#2dd4bf] animate-bounce [animation-delay:0.4s]" />
+              <span>Gig Kavach is thinking in {language}...</span>
             </div>
           )}
         </div>
 
         {/* Preset Query Chips */}
-        <div role="group" aria-label="Suggested quick questions" className="px-4 py-2 bg-slate-900/90 border-t border-slate-800 flex flex-wrap gap-1.5">
+        <div role="group" aria-label="Suggested quick questions" className="px-4 py-2 bg-[#0a2e27] border-t border-[#174a40] flex flex-wrap gap-1.5">
           {presetQueries.map((q, idx) => (
             <button
               key={idx}
               onClick={() => handleSendMessage(q.text)}
               aria-label={`Ask: ${q.label}`}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-full border border-slate-700 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="text-xs bg-[#0d3830] hover:bg-[#114a40] text-[#cfe9e1] hover:text-white px-2.5 py-1 rounded-full border border-[#174a40] transition focus:outline-none focus:ring-2 focus:ring-[#0d9488]"
             >
               💬 {q.label}
             </button>
@@ -301,15 +301,15 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         </div>
 
         {/* Input Bar with Mic & Send */}
-        <div className="p-3 bg-slate-800 border-t border-slate-700/80 flex items-center gap-2">
+        <div className="p-3 bg-[#0a2e27] border-t border-[#174a40] flex items-center gap-2">
           
           <button
             onClick={toggleListening}
             aria-label={isListening ? "Stop listening to speech" : "Start speaking into microphone"}
-            className={`p-3 rounded-2xl flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+            className={`p-3 rounded-2xl flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-[#0d9488] ${
               isListening
                 ? 'bg-rose-600 text-white animate-pulse ring-4 ring-rose-500/30'
-                : 'bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-600/30'
+                : 'bg-[#0d9488] hover:bg-[#0f766e] text-white shadow-lg shadow-[#0d9488]/30 active:scale-95'
             }`}
             title={isListening ? "Listening... click to stop" : "Click to speak"}
           >
@@ -323,14 +323,14 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             aria-label="Speak or type your message"
             placeholder={isListening ? "Listening... speak now" : "Speak or type in Hindi/English/Vernacular..."}
-            className="flex-1 bg-slate-900 text-white text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder:text-slate-500"
+            className="flex-1 bg-[#0d3830] text-white text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#174a40] focus:outline-none focus:ring-2 focus:ring-[#0d9488] placeholder:text-[#718882]"
           />
 
           <button
             onClick={() => handleSendMessage()}
             disabled={!transcript.trim() || isLoading}
-            aria-label="Send message to Saathi"
-            className="p-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:hover:bg-orange-600 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
+            aria-label="Send message to Gig Kavach"
+            className="p-2.5 rounded-xl bg-[#0d9488] hover:bg-[#0f766e] text-white disabled:opacity-40 disabled:hover:bg-[#0d9488] transition focus:outline-none focus:ring-2 focus:ring-[#0d9488] active:scale-95"
           >
             <Send className="w-4 h-4" aria-hidden="true" />
           </button>

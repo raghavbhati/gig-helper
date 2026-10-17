@@ -115,32 +115,32 @@ export const DocumentExplainerTab: React.FC<DocumentExplainerTabProps> = ({
     <div className="space-y-6">
       
       {/* Top Banner & Sample Presets */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#e2ece9]">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <FileSearch className="w-5 h-5 text-orange-600" aria-hidden="true" />
+            <h2 className="text-lg font-heading font-bold text-[#102a24] flex items-center gap-2">
+              <FileSearch className="w-5 h-5 text-[#0d9488]" aria-hidden="true" />
               <span>Document & Contract Plain-Language Explainer</span>
-              <span className="text-xs bg-orange-100 text-orange-800 font-semibold px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-[#ccfbf1] text-[#0f766e] font-bold px-2.5 py-0.5 rounded-full border border-[#99f6e4]">
                 Zero-Legalese
               </span>
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-[#5a736d] mt-1">
               Contracts are written to protect corporations, not workers. Paste any clause or warning letter to decode hidden traps in 3 simple bullets.
             </p>
           </div>
 
           <div role="group" aria-label="Sample contract clauses" className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-slate-400">Sample Clauses:</span>
+            <span className="text-xs font-semibold text-[#718882]">Sample Clauses:</span>
             {sampleDocuments.map((doc) => (
               <button
                 key={doc.id}
                 onClick={() => handleSelectDoc(doc)}
                 aria-pressed={selectedDoc.id === doc.id}
-                className={`text-xs px-3 py-1.5 rounded-xl font-medium transition border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                className={`text-xs px-3 py-1.5 rounded-xl font-bold transition border focus:outline-none focus:ring-2 focus:ring-[#0d9488] ${
                   selectedDoc.id === doc.id
-                    ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                    ? 'bg-[#0d3830] text-white border-[#0d3830] shadow-xs'
+                    : 'bg-[#f4fbf8] hover:bg-[#e6f5f0] text-[#4a5f59] border-[#e2ece9]'
                 }`}
               >
                 {doc.type === 'contract' ? '📄 Unilateral Termination' : doc.type === 'insurance_claim' ? '🏥 Insurance Trap' : '⚖️ Arbitration Waiver'}
@@ -150,22 +150,22 @@ export const DocumentExplainerTab: React.FC<DocumentExplainerTabProps> = ({
         </div>
 
         {/* Input box */}
-        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
+        <div className="mt-4 pt-4 border-t border-[#e2ece9] flex flex-col sm:flex-row gap-2">
           <textarea
             rows={2}
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
             aria-label="Paste confusing contract text or warning notice"
             placeholder="Or paste any confusing contract text, warning email, or show-cause notice here..."
-            className="flex-1 bg-slate-50 text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="flex-1 bg-[#f4fbf8] text-xs px-3 py-2 rounded-xl border border-[#d1deda] focus:outline-none focus:ring-2 focus:ring-[#0d9488] text-[#102a24]"
           />
           <button
             onClick={handleExplainCustom}
             disabled={isExplaining || !customText.trim()}
             aria-label="Decode and simplify legal clause"
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="px-4 py-2 bg-[#0d3830] hover:bg-[#0a2e27] text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#0d9488] active:scale-95 shadow-sm"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+            <Sparkles className="w-3.5 h-3.5 text-[#5eead4]" aria-hidden="true" />
             <span>{isExplaining ? 'Simplifying...' : 'Decode Clause'}</span>
           </button>
         </div>
@@ -175,20 +175,20 @@ export const DocumentExplainerTab: React.FC<DocumentExplainerTabProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
         {/* Left Col: Original Legal Jargon Excerpt */}
-        <div className="bg-slate-900 text-slate-200 rounded-2xl p-5 border border-slate-800 shadow-md flex flex-col justify-between space-y-4">
+        <div className="bg-[#0d3830] text-slate-200 rounded-2xl p-5 border border-[#174a40] shadow-md flex flex-col justify-between space-y-4">
           <div>
-            <span className="text-[11px] font-mono text-orange-400 uppercase tracking-wider block">
+            <span className="text-[11px] font-mono text-[#5eead4] uppercase tracking-wider block">
               Original Legal Clause / Contract Text
             </span>
-            <h3 className="font-bold text-sm text-white mt-1">
+            <h3 className="font-heading font-bold text-sm text-white mt-1">
               {selectedDoc.title}
             </h3>
-            <p className="mt-3 text-xs text-slate-300 font-mono leading-relaxed bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+            <p className="mt-3 text-xs text-[#cfe9e1] font-mono leading-relaxed bg-[#0a2e27] p-3.5 rounded-xl border border-[#174a40]">
               "{selectedDoc.originalExcerpt}"
             </p>
           </div>
 
-          <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-800">
+          <div className="text-[11px] text-[#718882] pt-2 border-t border-[#174a40]">
             Platform agreements frequently bury clauses that waive worker remedies.
           </div>
         </div>
@@ -210,15 +210,15 @@ export const DocumentExplainerTab: React.FC<DocumentExplainerTabProps> = ({
           )}
 
           {/* 3 Simple Questions Card */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div className="bg-white rounded-2xl p-5 border border-[#e2ece9] shadow-sm space-y-4">
             
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900">
+            <div className="flex items-center justify-between pb-3 border-b border-[#e2ece9]">
+              <h3 className="font-heading font-bold text-sm text-[#102a24]">
                 The 3-Bullet Plain Language Breakdown
               </h3>
               <button
                 onClick={speakDocument}
-                className="text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 border border-orange-200 transition"
+                className="text-xs bg-[#ccfbf1] hover:bg-[#99f6e4] text-[#0f766e] font-bold px-3 py-1 rounded-xl flex items-center gap-1.5 border border-[#99f6e4] transition"
               >
                 <Volume2 className="w-3.5 h-3.5" />
                 <span>Listen Aloud</span>
@@ -227,14 +227,14 @@ export const DocumentExplainerTab: React.FC<DocumentExplainerTabProps> = ({
 
             {/* Bullet 1: What is it? */}
             <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-xl bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-7 h-7 rounded-xl bg-[#ccfbf1] text-[#0f766e] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
                 1
               </div>
               <div>
-                <h4 className="font-bold text-xs text-slate-800">
+                <h4 className="font-bold text-xs text-[#102a24]">
                   Yeh Kagaz / Niyam Kya Hai? (What is this rule?)
                 </h4>
-                <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                <p className="text-xs text-[#4a5f59] mt-0.5 leading-relaxed">
                   {selectedDoc.simplifiedWhatIsIt}
                 </p>
               </div>
@@ -242,7 +242,7 @@ export const DocumentExplainerTab: React.FC<DocumentExplainerTabProps> = ({
 
             {/* Bullet 2: What is the impact? */}
             <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-7 h-7 rounded-xl bg-[#fef3c7] text-[#92400e] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
                 2
               </div>
               <div>
