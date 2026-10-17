@@ -57,16 +57,21 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
           {/* SOS Trigger */}
           <button
             onClick={handleTriggerSOS}
-            className="w-full sm:w-auto px-6 py-3.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black rounded-2xl shadow-xl shadow-rose-600/40 flex items-center justify-center gap-2 text-sm transition"
+            aria-label="Trigger Panic SOS broadcast to emergency contacts"
+            className="w-full sm:w-auto px-6 py-3.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black rounded-2xl shadow-xl shadow-rose-600/40 flex items-center justify-center gap-2 text-sm transition focus:outline-none focus:ring-4 focus:ring-rose-400"
           >
-            <AlertOctagon className="w-5 h-5 animate-spin" />
+            <AlertOctagon className="w-5 h-5 animate-spin" aria-hidden="true" />
             <span>{sosSent ? 'SOS Broadcaster Triggered!' : 'TRIGGER PANIC SOS'}</span>
           </button>
         </div>
 
         {sosSent && (
-          <div className="mt-4 p-3 bg-rose-800/60 rounded-xl border border-rose-700 text-xs text-rose-100 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mt-4 p-3 bg-rose-800/60 rounded-xl border border-rose-700 text-xs text-rose-100 flex items-center gap-2"
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true" />
             <span>
               Emergency dispatch payload generated with simulated GPS coordinates and SMS draft opened for emergency contacts.
             </span>
@@ -79,32 +84,36 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
         
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-orange-600" />
+            <ShieldAlert className="w-4 h-4 text-orange-600" aria-hidden="true" />
             <span>Shift Hazard & Climate Advisory</span>
           </h3>
 
-          <div className="flex items-center gap-2 text-xs">
+          <div role="group" aria-label="Weather advisory mode" className="flex items-center gap-2 text-xs">
             <button
               onClick={() => setActiveWeatherMode('rain')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition border ${
+              aria-pressed={activeWeatherMode === 'rain'}
+              aria-label="Show Monsoon and Waterlogging Road Safety Protocol"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 activeWeatherMode === 'rain'
                   ? 'bg-blue-600 text-white border-blue-600 shadow'
                   : 'bg-slate-50 text-slate-600 border-slate-200'
               }`}
             >
-              <CloudRain className="w-3.5 h-3.5" />
+              <CloudRain className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Monsoon & Waterlogging</span>
             </button>
 
             <button
               onClick={() => setActiveWeatherMode('heat')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition border ${
+              aria-pressed={activeWeatherMode === 'heat'}
+              aria-label="Show Severe Heatwave Advisory and Health Shield"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition border focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                 activeWeatherMode === 'heat'
                   ? 'bg-amber-600 text-white border-amber-600 shadow'
                   : 'bg-slate-50 text-slate-600 border-slate-200'
               }`}
             >
-              <SunMedium className="w-3.5 h-3.5" />
+              <SunMedium className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Severe Heatwave (&gt;42°C)</span>
             </button>
           </div>
@@ -114,7 +123,7 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
         {activeWeatherMode === 'rain' ? (
           <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4 text-xs text-blue-950 space-y-2">
             <div className="font-bold text-blue-900 flex items-center gap-1.5">
-              <CloudRain className="w-4 h-4 text-blue-600" />
+              <CloudRain className="w-4 h-4 text-blue-600" aria-hidden="true" />
               <span>Monsoon High-Risk Road Protocol:</span>
             </div>
             <ul className="space-y-1.5 text-blue-900/90 pl-5 list-disc">
@@ -126,7 +135,7 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
         ) : (
           <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 text-xs text-amber-950 space-y-2">
             <div className="font-bold text-amber-900 flex items-center gap-1.5">
-              <SunMedium className="w-4 h-4 text-amber-600" />
+              <SunMedium className="w-4 h-4 text-amber-600" aria-hidden="true" />
               <span>Extreme Heatwave Health Shield:</span>
             </div>
             <ul className="space-y-1.5 text-amber-900/90 pl-5 list-disc">
@@ -143,7 +152,7 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
         <div>
           <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-            <HeartPulse className="w-4 h-4 text-rose-600" />
+            <HeartPulse className="w-4 h-4 text-rose-600" aria-hidden="true" />
             <span>On-Duty Road Accident: 3-Step Legal & Insurance Checklist</span>
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -188,17 +197,29 @@ export const SafetyHubTab: React.FC<SafetyHubTabProps> = ({
         {/* Emergency Helplines Bar */}
         <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-700">
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-rose-700">
-              <PhoneCall className="w-3.5 h-3.5" />
+            <a
+              href="tel:112"
+              aria-label="Call National Emergency 112"
+              className="flex items-center gap-1.5 text-rose-700 hover:text-rose-900 transition focus:outline-none focus:underline"
+            >
+              <PhoneCall className="w-3.5 h-3.5" aria-hidden="true" />
               <span>National Emergency: <strong>112</strong></span>
-            </span>
-            <span className="flex items-center gap-1.5 text-amber-700">
-              <Ambulance className="w-3.5 h-3.5" />
+            </a>
+            <a
+              href="tel:108"
+              aria-label="Call Free Ambulance 108"
+              className="flex items-center gap-1.5 text-amber-700 hover:text-amber-900 transition focus:outline-none focus:underline"
+            >
+              <Ambulance className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Free Ambulance: <strong>108</strong></span>
-            </span>
-            <span className="flex items-center gap-1.5 text-slate-700">
+            </a>
+            <a
+              href="tel:14434"
+              aria-label="Call National Labor Helpline 14434"
+              className="flex items-center gap-1.5 text-slate-700 hover:text-slate-900 transition focus:outline-none focus:underline"
+            >
               <span>National Labor Helpline: <strong>14434</strong></span>
-            </span>
+            </a>
           </div>
         </div>
 

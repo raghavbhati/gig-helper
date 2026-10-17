@@ -124,20 +124,43 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         }),
       });
 
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const reply = data.reply || "Aapki request samajh li gayi hai.";
+      const reply = data.reply || "आपकी बात समझ ली गई है।";
 
       setChatHistory([...newHistory, { sender: 'saathi', text: reply }]);
       speakText(reply);
     } catch (err) {
-      console.error(err);
+      console.warn("API route unavailable, utilizing intelligent contextual offline fallback:", err);
+      const lower = text.toLowerCase();
+      let fallbackReply = "नमस्ते साथी! मैं आपका कानूनी व वित्तीय साथी हूँ। आप कमाई की जांच, पेनल्टी विवाद, या सरकारी योजनाओं के बारे में कभी भी पूछ सकते हैं।";
+
+      if (lower.includes("penalty") || lower.includes("dispute") || lower.includes("cut") || lower.includes("refund") || lower.includes("पेनल्टी") || lower.includes("काट") || lower.includes("वापस")) {
+        fallbackReply = language === 'en'
+          ? "Unfair penalty detected! Go to the 'Dispute Drafter' tab above. Saathi will generate a 3-tier grievance petition citing Indian Contract Act & Gig Worker Welfare Rules with an instant PDF download."
+          : "अनुचित पेनल्टी! ऊपर दिए गए 'Dispute Drafter' टैब पर जाएँ। साथी आपके लिए भारतीय अनुबंध अधिनियम के तहत 3-स्तरीय शिकायत पत्र और पीडीएफ तुरंत तैयार करेगा।";
+      } else if (lower.includes("shram") || lower.includes("welfare") || lower.includes("scheme") || lower.includes("insurance") || lower.includes("bima") || lower.includes("बीमा") || lower.includes("योजना")) {
+        fallbackReply = language === 'en'
+          ? "You are eligible for e-Shram (₹2 Lakh accidental cover) and Ayushman PM-JAY (₹5 Lakh health cover). Check the 'Welfare Schemes' tab to verify in 30 seconds."
+          : "आप ई-श्रम (₹2 लाख मुफ्त दुर्घटना बीमा) और आयुष्मान भारत (₹5 लाख स्वास्थ्य बीमा) के पात्र हैं। 30 सेकंड में पात्रता जानने के लिए ऊपर 'Welfare Schemes' टैब देखें।";
+      } else if (lower.includes("block") || lower.includes("id") || lower.includes("account") || lower.includes("आईडी") || lower.includes("ब्लॉक")) {
+        fallbackReply = language === 'en'
+          ? "Arbitrary deactivation is legally challengeable. Open Dispute Drafter Tier 2 for Operations Management Escalation or Tier 3 for a formal petition to the District Labor Commissioner."
+          : "बिना सुनवाई आईडी ब्लॉक करना नियमों के विरुद्ध है। ऑपरेशंस मैनेजमेंट को ईमेल भेजने या लेबर कमिश्नर को कानूनी नोटिस देने के लिए Dispute Drafter का उपयोग करें।";
+      } else if (lower.includes("earning") || lower.includes("fuel") || lower.includes("wage") || lower.includes("kamai") || lower.includes("कमाई") || lower.includes("घंटे")) {
+        fallbackReply = language === 'en'
+          ? "Check the 'Earnings Audit' tab to analyze your real take-home pay after fuel deductions against the statutory ₹95/hr minimum benchmark."
+          : "पेट्रोल खर्च और कटौतियों के बाद अपनी असली कमाई की जांच करने के लिए 'Earnings Audit' टैब खोलें। यह ₹95/घंटे की न्यूनतम मजदूरी से मिलान करता है।";
+      }
+
       setChatHistory([
         ...newHistory,
         {
           sender: 'saathi',
-          text: "Technical hiccup! But don't worry, you can check our Dispute or Welfare tabs directly above.",
+          text: fallbackReply,
         },
       ]);
+      speakText(fallbackReply);
     } finally {
       setIsLoading(false);
     }
@@ -167,17 +190,22 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="voice-assistant-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-fadeIn"
+    >
       <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh] overflow-hidden text-slate-100">
         
         {/* Header */}
         <div className="p-4 bg-slate-800/80 border-b border-slate-700/60 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center shadow-md">
-              <Sparkles className="w-4 h-4 text-white" />
+              <Sparkles className="w-4 h-4 text-white" aria-hidden="true" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white flex items-center gap-2">
+              <h3 id="voice-assistant-title" className="font-bold text-sm text-white flex items-center gap-2">
                 Saathi Voice Co-pilot
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-bold">
                   LIVE
@@ -190,16 +218,18 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => speakText(chatHistory[chatHistory.length - 1]?.text || '')}
-              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition focus:outline-none focus:ring-2 focus:ring-orange-500"
               title={isSpeaking ? "Stop Voice" : "Listen aloud"}
+              aria-label={isSpeaking ? "Stop Voice playback" : "Listen aloud to latest assistant response"}
             >
-              {isSpeaking ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-orange-400" />}
+              {isSpeaking ? <VolumeX className="w-4 h-4 text-rose-400" aria-hidden="true" /> : <Volume2 className="w-4 h-4 text-orange-400" aria-hidden="true" />}
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+              aria-label="Close Voice Assistant dialog"
+              className="p-2 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-400 hover:text-white transition focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -257,12 +287,13 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
         </div>
 
         {/* Preset Query Chips */}
-        <div className="px-4 py-2 bg-slate-900/90 border-t border-slate-800 flex flex-wrap gap-1.5">
+        <div role="group" aria-label="Suggested quick questions" className="px-4 py-2 bg-slate-900/90 border-t border-slate-800 flex flex-wrap gap-1.5">
           {presetQueries.map((q, idx) => (
             <button
               key={idx}
               onClick={() => handleSendMessage(q.text)}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-full border border-slate-700 transition"
+              aria-label={`Ask: ${q.label}`}
+              className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-full border border-slate-700 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               💬 {q.label}
             </button>
@@ -274,14 +305,15 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
           
           <button
             onClick={toggleListening}
-            className={`p-3 rounded-2xl flex items-center justify-center transition-all ${
+            aria-label={isListening ? "Stop listening to speech" : "Start speaking into microphone"}
+            className={`p-3 rounded-2xl flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 ${
               isListening
                 ? 'bg-rose-600 text-white animate-pulse ring-4 ring-rose-500/30'
                 : 'bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-600/30'
             }`}
             title={isListening ? "Listening... click to stop" : "Click to speak"}
           >
-            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            {isListening ? <MicOff className="w-5 h-5" aria-hidden="true" /> : <Mic className="w-5 h-5" aria-hidden="true" />}
           </button>
 
           <input
@@ -289,6 +321,7 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            aria-label="Speak or type your message"
             placeholder={isListening ? "Listening... speak now" : "Speak or type in Hindi/English/Vernacular..."}
             className="flex-1 bg-slate-900 text-white text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder:text-slate-500"
           />
@@ -296,9 +329,10 @@ export const VoiceAssistant: React.FC<VoiceAssistantProps> = ({
           <button
             onClick={() => handleSendMessage()}
             disabled={!transcript.trim() || isLoading}
-            className="p-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:hover:bg-orange-600 transition"
+            aria-label="Send message to Saathi"
+            className="p-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white disabled:opacity-40 disabled:hover:bg-orange-600 transition focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
