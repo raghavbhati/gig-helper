@@ -2,8 +2,11 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Saathi (साथी) — GenAI Co-pilot for Gig & Informal Workers',
-  description: 'Multilingual GenAI assistant providing earnings audit, dispute drafting, welfare scheme access, document explanation, and safety guidance for gig and informal workers.',
+  title: 'Saathi (साथी) — काम में आपका भरोसेमंद साथी',
+  description: 'Multilingual GenAI co-pilot for gig and informal workers: earnings audit, dispute drafting, government welfare schemes, document explainer, and worker safety.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export const viewport: Viewport = {
@@ -19,8 +22,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-50 min-h-screen antialiased text-slate-900">
+    <html lang="hi">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body className="bg-[#f8faf9] text-[#102a24] min-h-screen antialiased font-sans selection:bg-[#ccfbf1] selection:text-[#0f766e]">
         {children}
       </body>
     </html>
