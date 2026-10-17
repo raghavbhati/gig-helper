@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { sampleEarningsPresets, EarningsRecord } from '@/lib/sampleData';
 import { Language, Persona } from '@/lib/translations';
 import {
@@ -15,6 +15,11 @@ import {
   Volume2,
   DollarSign,
   HelpCircle,
+  Save,
+  Trash2,
+  History,
+  CheckCircle2,
+  PlusCircle,
 } from 'lucide-react';
 
 interface EarningsAuditTabProps {
@@ -28,19 +33,127 @@ interface EarningsAuditTabProps {
   }) => void;
 }
 
+const STORAGE_KEY = 'saathi_earnings_log';
+
 export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
   language,
   persona,
   onNavigateToDispute,
 }) => {
   const [currentRecord, setCurrentRecord] = useState<EarningsRecord>(sampleEarningsPresets[0]);
+  const [savedLogs, setSavedLogs] = useState<EarningsRecord[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  // Manual Input Box States
+  const [inputGross, setInputGross] = useState<string>('1450');
+  const [inputHours, setInputHours] = useState<string>('10');
+  const [inputPenalty, setInputPenalty] = useState<string>('350');
+  const [inputPenaltyReason, setInputPenaltyReason] = useState<string>('Customer Rain Delay Bottleneck');
+  const [inputPlatform, setInputPlatform] = useState<string>('Swiggy');
   const [customText, setCustomText] = useState('');
   const [uploadedImageName, setUploadedImageName] = useState<string | null>(null);
 
-  const handleSelectPreset = (record: EarningsRecord) => {
+  // Initialize and pull from LocalStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setSavedLogs(parsed);
+            setCurrentRecord(parsed[0]);
+            return;
+          }
+        }
+        // First time on device: seed with sample presets
+        setSavedLogs(sampleEarningsPresets);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleEarningsPresets));
+      } catch (err) {
+        console.error('Error reading localStorage:', err);
+      }
+    }
+  }, []);
+
+  // Helper to persist logs into LocalStorage
+  const persistLogs = (logs: EarningsRecord[]) => {
+    setSavedLogs(logs);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+      } catch (err) {
+        console.error('Error saving to localStorage:', err);
+      }
+    }
+  };
+
+  const handleSelectPresetOrLog = (record: EarningsRecord) => {
     setCurrentRecord(record);
+    setInputGross(record.grossPay.toString());
+    setInputHours(record.activeHours.toString());
+    setInputPenalty(record.deductions.penalty.toString());
+    setInputPenaltyReason(record.deductions.penaltyReason);
+    setInputPlatform(record.source.split(' ')[0] || 'Platform');
     setUploadedImageName(null);
+  };
+
+  // Save custom input values to LocalStorage and update current view
+  const handleSaveToLocalStorage = () => {
+    const gross = parseFloat(inputGross) || 0;
+    const hours = parseFloat(inputHours) || 8;
+    const penalty = parseFloat(inputPenalty) || 0;
+    const fuel = Math.round(gross * 0.22);
+    const net = Math.max(0, gross - fuel - penalty);
+    const hourlyWage = hours > 0 ? Math.round((net / hours) * 10) / 10 : 0;
+    const minWage = 95.0;
+
+    const newRecord: EarningsRecord = {
+      id: 'saved-' + Date.now(),
+      source: `${inputPlatform} Shift Payout`,
+      workerPersona: persona,
+      date: new Date().toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      grossPay: gross,
+      ordersOrTrips: Math.max(1, Math.round(gross / 100)),
+      activeHours: hours,
+      tips: Math.round(gross * 0.05),
+      surge: Math.round(gross * 0.1),
+      deductions: {
+        fuelEstimate: fuel,
+        platformCommission: 0,
+        penalty: penalty,
+        penaltyReason: inputPenaltyReason || 'Unexplained deduction',
+      },
+      netPay: net,
+      realHourlyWage: hourlyWage,
+      statutoryMinHourlyWage: minWage,
+      discrepancyAlert: penalty > 0
+        ? `Saved Log Alert: A penalty of ₹${penalty} was withheld for "${inputPenaltyReason}". This deduction dropped your effective wage to ₹${hourlyWage}/hr.`
+        : null,
+      explanationHindi: `कुल कमाई ₹${gross} थी। ₹${fuel} पेट्रोल और ₹${penalty} कटौती के बाद असली बचत ₹${net} (यानी ₹${hourlyWage}/घंटा) रही।`,
+      explanationEnglish: `Gross payout logged at ₹${gross}. After ₹${fuel} fuel and ₹${penalty} deductions, real take-home is ₹${net} (₹${hourlyWage}/hr).`,
+    };
+
+    const updated = [newRecord, ...savedLogs];
+    persistLogs(updated);
+    setCurrentRecord(newRecord);
+    setShowManualForm(false);
+    setSaveSuccessMsg(`Saved ₹${gross} gross payout to device LocalStorage!`);
+    setTimeout(() => setSaveSuccessMsg(null), 3500);
+  };
+
+  const handleDeleteSavedLog = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = savedLogs.filter((log) => log.id !== id);
+    persistLogs(updated);
+    if (currentRecord.id === id && updated.length > 0) {
+      setCurrentRecord(updated[0]);
+    }
   };
 
   const handleSimulateCustomAudit = async () => {
@@ -55,10 +168,11 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
         }),
       });
       const data = await res.json();
-      setCurrentRecord({
-        ...currentRecord,
-        id: 'custom-' + Date.now(),
-        source: 'User Uploaded Slip / Text Input',
+      const auditedRecord: EarningsRecord = {
+        id: 'audit-' + Date.now(),
+        source: `${persona === 'driver' ? 'Uber/Ola' : 'Swiggy/Zomato'} Slip Audit`,
+        workerPersona: persona,
+        date: 'Today (Audited Shift)',
         grossPay: data.grossPay || 1400,
         ordersOrTrips: data.ordersOrTrips || 12,
         activeHours: data.activeHours || 10,
@@ -76,7 +190,13 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
         discrepancyAlert: data.discrepancyAlert || 'Unfair penalty flagged during peak weather.',
         explanationHindi: data.explanationHindi || 'आपकी कटी हुई पेनल्टी वापस पाने योग्य है।',
         explanationEnglish: data.explanationEnglish || 'Penalty flagged for appeal.',
-      });
+      };
+
+      setCurrentRecord(auditedRecord);
+      const updated = [auditedRecord, ...savedLogs];
+      persistLogs(updated);
+      setSaveSuccessMsg('AI audit completed and automatically saved to device LocalStorage!');
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
     } catch (e) {
       console.error(e);
     } finally {
@@ -103,9 +223,25 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
 
   const isBelowMinWage = currentRecord.realHourlyWage < currentRecord.statutoryMinHourlyWage;
 
+  // Cumulative stats from LocalStorage logs
+  const totalGrossSaved = savedLogs.reduce((acc, log) => acc + (log.grossPay || 0), 0);
+  const totalPenaltiesSaved = savedLogs.reduce((acc, log) => acc + (log.deductions?.penalty || 0), 0);
+  const totalNetSaved = savedLogs.reduce((acc, log) => acc + (log.netPay || 0), 0);
+
   return (
     <div className="space-y-6">
       
+      {/* Save Success Banner */}
+      {saveSuccessMsg && (
+        <div className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between shadow-md animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+            <span>{saveSuccessMsg}</span>
+          </div>
+          <span className="text-[10px] bg-emerald-700/60 px-2 py-0.5 rounded">LocalStorage Synced</span>
+        </div>
+      )}
+
       {/* Top Banner & Quick Presets */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -113,35 +249,108 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-orange-600" />
               <span>Earnings & Unfair Deduction Auditor</span>
-              <span className="text-xs bg-orange-100 text-orange-800 font-semibold px-2 py-0.5 rounded-full">
-                Multimodal OCR
+              <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Save className="w-3 h-3" />
+                Device Storage Active
               </span>
             </h2>
             <p className="text-xs text-slate-500 mt-1">
-              Upload delivery app screenshot, weekly summary, or photo of daily wage slip to discover your true net take-home and flag illegal deductions.
+              Your logged earnings and penalties are automatically saved to your browser’s LocalStorage and will persist across visits on this device.
             </p>
           </div>
 
-          {/* Preset Buttons for Quick Hackathon Demo */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-slate-400">Demo Slips:</span>
-            {sampleEarningsPresets.map((preset) => (
-              <button
-                key={preset.id}
-                onClick={() => handleSelectPreset(preset)}
-                className={`text-xs px-3 py-1.5 rounded-xl font-medium transition border ${
-                  currentRecord.id === preset.id
-                    ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                }`}
-              >
-                {preset.workerPersona === 'delivery' ? '🛵 Swiggy Rain Fine' : preset.workerPersona === 'driver' ? '🚗 Uber Clawback' : '🔨 Labor Wage Cut'}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowManualForm(!showManualForm)}
+              className="px-3.5 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>{showManualForm ? 'Hide Log Input' : 'Log New Payout'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Upload Drop Zone & Custom Input */}
+        {/* Manual Input Box (Requested by User to Save into LocalStorage) */}
+        {showManualForm && (
+          <div className="mt-4 pt-4 border-t border-slate-100 bg-orange-50/60 p-4 rounded-xl border border-orange-100 space-y-3 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-xs text-orange-950 uppercase tracking-wide flex items-center gap-1.5">
+                <Save className="w-3.5 h-3.5 text-orange-600" />
+                <span>Save New Payout to LocalStorage</span>
+              </h3>
+              <span className="text-[10px] text-slate-500">All fields persist automatically</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Company / Platform</label>
+                <input
+                  type="text"
+                  value={inputPlatform}
+                  onChange={(e) => setInputPlatform(e.target.value)}
+                  placeholder="Swiggy, Uber, Zepto..."
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-medium focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Gross Payout (₹)</label>
+                <input
+                  type="number"
+                  value={inputGross}
+                  onChange={(e) => setInputGross(e.target.value)}
+                  placeholder="1450"
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Active Hours</label>
+                <input
+                  type="number"
+                  value={inputHours}
+                  onChange={(e) => setInputHours(e.target.value)}
+                  placeholder="10"
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-medium focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Unfair Deduction (₹)</label>
+                <input
+                  type="number"
+                  value={inputPenalty}
+                  onChange={(e) => setInputPenalty(e.target.value)}
+                  placeholder="350"
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-bold text-rose-600 focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Deduction Reason</label>
+                <input
+                  type="text"
+                  value={inputPenaltyReason}
+                  onChange={(e) => setInputPenaltyReason(e.target.value)}
+                  placeholder="Rain delay, cancellation..."
+                  className="w-full bg-white px-3 py-2 rounded-lg border border-slate-200 font-medium focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={handleSaveToLocalStorage}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md"
+              >
+                <Save className="w-3.5 h-3.5 text-orange-400" />
+                <span>Save to LocalStorage & Audit</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Upload Drop Zone & AI Quick Text Input */}
         <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-3">
           
           {/* File Upload Button */}
@@ -151,7 +360,7 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
               <div className="text-xs font-bold text-slate-700 group-hover:text-orange-700">
                 {uploadedImageName ? `Uploaded: ${uploadedImageName}` : 'Upload App Screenshot or Daily Slip'}
               </div>
-              <div className="text-[11px] text-slate-400">Supports PNG, JPG, or Camera Photos</div>
+              <div className="text-[11px] text-slate-400">Multimodal OCR auto-extracts and saves to device</div>
             </div>
             <input
               type="file"
@@ -176,7 +385,7 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
               className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>{isAnalyzing ? 'Auditing...' : 'Audit'}</span>
+              <span>{isAnalyzing ? 'Auditing...' : 'AI Audit'}</span>
             </button>
           </div>
 
@@ -353,6 +562,126 @@ export const EarningsAuditTab: React.FC<EarningsAuditTabProps> = ({
             </p>
           </div>
 
+        </div>
+
+      </div>
+
+      {/* Persistent LocalStorage Earnings History Log Table */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <History className="w-4 h-4 text-orange-600" />
+              <span>Device Saved Earnings Log ({savedLogs.length} Shifts Recorded)</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Saved in browser LocalStorage. Click any row to load into auditor or draft dispute.
+            </p>
+          </div>
+
+          {/* Cumulative Totals Bar */}
+          <div className="flex flex-wrap items-center gap-3 text-xs bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
+            <div>
+              <span className="text-slate-400">Total Gross: </span>
+              <span className="font-extrabold text-slate-800">₹{totalGrossSaved}</span>
+            </div>
+            <div className="text-slate-300">|</div>
+            <div>
+              <span className="text-slate-400">Penalties Withheld: </span>
+              <span className="font-extrabold text-rose-600">₹{totalPenaltiesSaved}</span>
+            </div>
+            <div className="text-slate-300">|</div>
+            <div>
+              <span className="text-slate-400">Total Net: </span>
+              <span className="font-extrabold text-emerald-600">₹{totalNetSaved}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Saved Table / Cards */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-400 font-semibold uppercase text-[10px]">
+                <th className="py-2.5 px-3">Date / Shift</th>
+                <th className="py-2.5 px-3">Platform</th>
+                <th className="py-2.5 px-3">Gross Pay</th>
+                <th className="py-2.5 px-3">Hours</th>
+                <th className="py-2.5 px-3">Unfair Penalty</th>
+                <th className="py-2.5 px-3">Net Real Pay</th>
+                <th className="py-2.5 px-3">Hourly Rate</th>
+                <th className="py-2.5 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium">
+              {savedLogs.map((log) => {
+                const isSelected = currentRecord.id === log.id;
+                return (
+                  <tr
+                    key={log.id}
+                    onClick={() => handleSelectPresetOrLog(log)}
+                    className={`cursor-pointer transition hover:bg-orange-50/50 ${
+                      isSelected ? 'bg-orange-50/80 font-bold' : ''
+                    }`}
+                  >
+                    <td className="py-3 px-3 text-slate-800 whitespace-nowrap">
+                      {log.date}
+                      {isSelected && (
+                        <span className="ml-1.5 text-[9px] bg-orange-600 text-white px-1.5 py-0.2 rounded font-bold">
+                          ACTIVE
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-slate-700 whitespace-nowrap">
+                      {log.source.split(' ')[0]}
+                    </td>
+                    <td className="py-3 px-3 text-slate-900 font-bold whitespace-nowrap">
+                      ₹{log.grossPay}
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 whitespace-nowrap">
+                      {log.activeHours} hrs
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      {log.deductions.penalty > 0 ? (
+                        <span className="text-rose-600 font-bold flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 shrink-0" />
+                          ₹{log.deductions.penalty}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">₹0</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-emerald-700 font-bold whitespace-nowrap">
+                      ₹{log.netPay}
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <span className={log.realHourlyWage < 95 ? 'text-rose-600 font-bold' : 'text-emerald-600 font-bold'}>
+                        ₹{log.realHourlyWage.toFixed(1)}/hr
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleSelectPresetOrLog(log)}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]"
+                        >
+                          Load
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteSavedLog(log.id, e)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-rose-600 transition"
+                          title="Delete from device storage"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
       </div>
