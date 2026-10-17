@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import { Language, Persona } from '@/lib/translations';
 import {
@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   Volume2,
   Sparkles,
+  Mic,
+  MicOff,
 } from 'lucide-react';
 
 interface DisputeDrafterTabProps {
@@ -47,8 +49,54 @@ export const DisputeDrafterTab: React.FC<DisputeDrafterTabProps> = ({
   const [activeTier, setActiveTier] = useState<'tier1' | 'tier2' | 'tier3'>('tier2');
   const [isDrafting, setIsDrafting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isListeningIncident, setIsListeningIncident] = useState(false);
 
   const [draftResult, setDraftResult] = useState<any>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Setup speech recognition for the incident textarea
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = language === 'en' ? 'en-IN' : 'hi-IN';
+
+        recognition.onresult = (event: any) => {
+          const current = event.resultIndex;
+          const text = event.results[current][0].transcript;
+          setDescription(text);
+        };
+
+        recognition.onerror = (event: any) => {
+          console.warn('Speech recognition error in Dispute:', event.error);
+          setIsListeningIncident(false);
+        };
+
+        recognition.onend = () => {
+          setIsListeningIncident(false);
+        };
+
+        recognitionRef.current = recognition;
+      }
+    }
+  }, [language]);
+
+  const toggleListeningIncident = () => {
+    if (isListeningIncident) {
+      recognitionRef.current?.stop();
+      setIsListeningIncident(false);
+    } else {
+      try {
+        recognitionRef.current?.start();
+        setIsListeningIncident(true);
+      } catch (e) {
+        console.warn('Could not start speech recognition:', e);
+      }
+    }
+  };
 
   // Update when prefillData changes
   useEffect(() => {
@@ -238,16 +286,101 @@ export const DisputeDrafterTab: React.FC<DisputeDrafterTabProps> = ({
           </div>
 
           <div className="sm:col-span-2 md:col-span-4">
-            <label className="font-semibold text-slate-600 block mb-1">
-              What Happened? (You can type or speak simply)
-            </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what occurred, traffic delay, customer dispute, bad weather, or arbitrary block..."
-              className="w-full bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-xs text-slate-800 font-medium"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="font-semibold text-slate-700 flex items-center gap-1.5 text-xs">
+                <span>What Happened? (You can type or speak simply)</span>
+              </label>
+
+              {/* Dedicated Mic Button */}
+              <button
+                type="button"
+                onClick={toggleListeningIncident}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                  isListeningIncident
+                    ? 'bg-rose-600 text-white animate-pulse ring-4 ring-rose-500/30'
+                    : 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/20'
+                }`}
+                title={isListeningIncident ? 'Listening... click to stop' : 'Click to speak your problem'}
+              >
+                {isListeningIncident ? (
+                  <>
+                    <MicOff className="w-3.5 h-3.5" />
+                    <span>Listening... बोलिए (Stop)</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic className="w-3.5 h-3.5 text-amber-200" />
+                    <span>बोलकर बताएं / Speak via Mic</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="relative">
+              <textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe what occurred, traffic delay, customer dispute, bad weather, or arbitrary block..."
+                className={`w-full bg-slate-50 px-3.5 py-2.5 pr-12 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500 text-xs sm:text-sm text-slate-800 font-medium transition ${
+                  isListeningIncident
+                    ? 'border-rose-400 ring-2 ring-rose-300/40 bg-rose-50/20'
+                    : 'border-slate-200'
+                }`}
+              />
+
+              {/* Secondary Floating Mic inside Textarea */}
+              <button
+                type="button"
+                onClick={toggleListeningIncident}
+                className={`absolute right-2.5 bottom-3 p-2 rounded-xl transition ${
+                  isListeningIncident
+                    ? 'bg-rose-600 text-white animate-pulse'
+                    : 'bg-slate-200 hover:bg-orange-600 hover:text-white text-slate-600'
+                }`}
+                title="Toggle microphone"
+              >
+                {isListeningIncident ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* Quick 1-Click Incident Templates */}
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <span className="text-[10px] text-slate-400 font-semibold">Quick Scenarios:</span>
+              <button
+                type="button"
+                onClick={() =>
+                  setDescription(
+                    'Heavy monsoon waterlogging caused massive traffic blockage on delivery route. Customer marked delayed order and Swiggy penalized ₹350 unfairly without checking GPS weather telemetry.'
+                  )
+                }
+                className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200 transition"
+              >
+                🌧️ Monsoon Traffic Delay
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setDescription(
+                    'Passenger insisted on unauthorized off-app route stops and excess baggage. When driver declined due to safety regulations, passenger falsely cancelled and platform levied cancellation penalty.'
+                  )
+                }
+                className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200 transition"
+              >
+                🛑 Passenger Route Dispute
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setDescription(
+                    'Platform algorithm suddenly throttled and suspended account without prior notice or show-cause inquiry following an unverified low rating from a single customer.'
+                  )
+                }
+                className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200 transition"
+              >
+                🚫 Arbitrary Account Ban
+              </button>
+            </div>
           </div>
 
         </div>
