@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { callGemini } from '@/lib/aiService';
-
-export const dynamic = 'force-dynamic';
-
-export async function POST(req: NextRequest) {
+export async function onRequestPost(context: any) {
   try {
-    const { documentText, imageBase64, language = 'hi' } = await req.json();
+    const { documentText, imageBase64, language = 'hi' } = await context.request.json();
+    const apiKey = context.env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
-    const systemPrompt = `You are Saathi-AI, a legal and contract simplification assistant for informal & gig workers.
+    let resultJson = null;
+
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Saathi-AI, a legal and contract simplification assistant for informal & gig workers.
 Analyze the provided document excerpt or image (contract clause, deactivation notice, insurance policy, wage memo).
 Explain it in simple, everyday language that a semi-literate worker can immediately understand.
 
@@ -25,15 +25,35 @@ Respond in JSON matching:
   "trapWarning": string | null
 }`;
 
-    let resultJson = null;
-    const aiOutput = await callGemini(systemPrompt + "\nDocument content:\n" + (documentText || "Document Image"), imageBase64);
+        const contents: any[] = [];
+        const parts: any[] = [];
+        if (imageBase64) {
+          parts.push({
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: imageBase64.replace(/^data:image\/\w+;base64,/, "")
+            }
+          });
+        }
+        parts.push({ text: systemPrompt + "\nDocument content:\n" + (documentText || "Document Image") });
+        contents.push({ parts });
 
-    if (aiOutput) {
-      try {
-        const cleaned = aiOutput.replace(/```json/g, "").replace(/```/g, "").trim();
-        resultJson = JSON.parse(cleaned);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents, generationConfig: { temperature: 0.2, maxOutputTokens: 1500 } })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            resultJson = JSON.parse(cleaned);
+          }
+        }
       } catch (e) {
-        console.warn("Failed to parse AI output, falling back");
+        console.warn("Cloudflare Pages Gemini explain-doc error:", e);
       }
     }
 
@@ -46,9 +66,13 @@ Respond in JSON matching:
       };
     }
 
-    return NextResponse.json(resultJson);
+    return new Response(JSON.stringify(resultJson), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (error) {
-    console.error("API error in explain-doc:", error);
-    return NextResponse.json({ error: "Failed to explain document" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to explain document" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }

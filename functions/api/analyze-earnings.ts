@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { callGemini } from '@/lib/aiService';
-
-export const dynamic = 'force-dynamic';
-
-export async function POST(req: NextRequest) {
+export async function onRequestPost(context: any) {
   try {
-    const { imageBase64, textInput, persona = 'delivery' } = await req.json();
+    const { imageBase64, textInput, persona = 'delivery' } = await context.request.json();
+    const apiKey = context.env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
-    const systemPrompt = `You are Saathi-AI, an expert financial auditor for gig and informal workers (delivery riders, drivers, daily-wage laborers).
+    let resultJson = null;
+
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Saathi-AI, an expert financial auditor for gig and informal workers (delivery riders, drivers, daily-wage laborers).
 Analyze the provided earnings screenshot or text.
 Extract or calculate:
 - grossPay (number)
@@ -47,20 +47,39 @@ Return ONLY valid JSON matching this schema:
   "explanationEnglish": string
 }`;
 
-    let resultJson = null;
-    const aiOutput = await callGemini(systemPrompt + "\nUser Input:\n" + (textInput || "Analyze uploaded image"), imageBase64);
+        const contents: any[] = [];
+        const parts: any[] = [];
+        if (imageBase64) {
+          parts.push({
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: imageBase64.replace(/^data:image\/\w+;base64,/, "")
+            }
+          });
+        }
+        parts.push({ text: systemPrompt + "\nUser Input:\n" + (textInput || "Analyze uploaded image") });
+        contents.push({ parts });
 
-    if (aiOutput) {
-      try {
-        const cleaned = aiOutput.replace(/```json/g, "").replace(/```/g, "").trim();
-        resultJson = JSON.parse(cleaned);
-      } catch (e) {
-        console.warn("Failed to parse AI output, falling back");
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents, generationConfig: { temperature: 0.2, maxOutputTokens: 1500 } })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            resultJson = JSON.parse(cleaned);
+          }
+        }
+      } catch (err) {
+        console.warn("Cloudflare Pages Gemini call error:", err);
       }
     }
 
     if (!resultJson) {
-      // High-quality contextual fallback
       const gross = textInput?.includes('uber') ? 2200 : 1350;
       const hours = 10;
       const fuel = Math.round(gross * 0.22);
@@ -89,9 +108,13 @@ Return ONLY valid JSON matching this schema:
       };
     }
 
-    return NextResponse.json(resultJson);
+    return new Response(JSON.stringify(resultJson), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (error) {
-    console.error("API error in analyze-earnings:", error);
-    return NextResponse.json({ error: "Failed to analyze earnings" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to analyze earnings" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }

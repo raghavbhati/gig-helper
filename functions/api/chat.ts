@@ -1,26 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { callGemini } from '@/lib/aiService';
-
-export const dynamic = 'force-dynamic';
-
-export async function POST(req: NextRequest) {
+export async function onRequestPost(context: any) {
   try {
-    const { message, language = 'hinglish', persona = 'delivery', history = [] } = await req.json();
+    const { message, language = 'hinglish', persona = 'delivery' } = await context.request.json();
+    const apiKey = context.env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
-    const systemPrompt = `You are Saathi (साथी), an empathetic, smart, street-savvy AI guardian for gig and informal workers (food delivery riders, cab/auto drivers, daily-wage laborers).
+    let reply = null;
+
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Saathi (साथी), an empathetic, smart, street-savvy AI guardian for gig and informal workers (food delivery riders, cab/auto drivers, daily-wage laborers).
 The user is speaking in ${language}.
 Their persona is: ${persona}.
 Answer in their selected language (${language}). Keep the tone warm, respectful, concise (max 3-4 sentences), and crystal clear.
 Do NOT use legal jargon. Explain rules using everyday street analogies.
 Always give 1 actionable next step (e.g. check e-Shram card, take screenshot, file dispute).`;
 
-    let reply = null;
-    const aiOutput = await callGemini(`${systemPrompt}\nUser says: ${message}`);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\nUser says: ${message}` }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 600 }
+          })
+        });
 
-    if (aiOutput) {
-      reply = aiOutput.trim();
-    } else {
-      // Realistic fallback based on common gig topics
+        if (res.ok) {
+          const data = await res.json();
+          reply = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+        }
+      } catch (e) {
+        console.warn("Cloudflare Pages Gemini chat error:", e);
+      }
+    }
+
+    if (!reply) {
       const msgLower = (message || '').toLowerCase();
       if (msgLower.includes('penalty') || msgLower.includes('kat gaya') || msgLower.includes('cut') || msgLower.includes('fine')) {
         reply = language === 'en'
@@ -37,9 +49,13 @@ Always give 1 actionable next step (e.g. check e-Shram card, take screenshot, fi
       }
     }
 
-    return NextResponse.json({ reply });
+    return new Response(JSON.stringify({ reply }), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (error) {
-    console.error("API error in chat:", error);
-    return NextResponse.json({ error: "Failed to process chat" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to process chat" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }

@@ -1,9 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { callGemini } from '@/lib/aiService';
-
-export const dynamic = 'force-dynamic';
-
-export async function POST(req: NextRequest) {
+export async function onRequestPost(context: any) {
   try {
     const {
       incidentDescription,
@@ -13,20 +8,20 @@ export async function POST(req: NextRequest) {
       workerPhone = '98XXXXXXXX',
       workerPersona = 'delivery',
       deductionAmount = '350',
-    } = await req.json();
+    } = await context.request.json();
 
-    const systemPrompt = `You are Saathi-AI, a legal advocacy assistant for gig and unorganized informal workers.
+    const apiKey = context.env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    let resultJson = null;
+
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Saathi-AI, a legal advocacy assistant for gig and unorganized informal workers.
 Generate a multi-tier dispute escalation bundle for the following incident:
 Platform: ${platformName}
 Worker: ${workerName} (${workerPhone}, ${workerPersona})
 Order/Ticket: ${orderOrTicketId}
 Deduction/Issue: ₹${deductionAmount}
 Incident Details: ${incidentDescription}
-
-Requirements:
-1. inAppSupportMessage: Short (under 60 words), polite, crisp text suitable for platform live in-app chat.
-2. officialEscalationEmail: Formal email with professional Subject and Body addressed to Partner Grievance Officer / Operations Lead. It must cite operational delays, force majeure or lack of human review, and demand refund within 48 hours.
-3. laborCommissionerPetition: Formal petition addressed to "The District Labor Commissioner / Platform Gig Workers Grievance Redressal Officer" citing principles of natural justice, Code on Social Security 2020 / State Gig Workers Social Security Act, and illegal arbitrary wage withholding.
 
 Return ONLY valid JSON matching:
 {
@@ -42,16 +37,25 @@ Return ONLY valid JSON matching:
     "relevantLegalActs": string[]
   }
 }`;
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
+          })
+        });
 
-    let resultJson = null;
-    const aiOutput = await callGemini(systemPrompt);
-
-    if (aiOutput) {
-      try {
-        const cleaned = aiOutput.replace(/```json/g, "").replace(/```/g, "").trim();
-        resultJson = JSON.parse(cleaned);
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            resultJson = JSON.parse(cleaned);
+          }
+        }
       } catch (e) {
-        console.warn("Failed to parse AI output, falling back");
+        console.warn("Cloudflare Pages Gemini draft-dispute error:", e);
       }
     }
 
@@ -76,9 +80,13 @@ Return ONLY valid JSON matching:
       };
     }
 
-    return NextResponse.json(resultJson);
+    return new Response(JSON.stringify(resultJson), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (error) {
-    console.error("API error in draft-dispute:", error);
-    return NextResponse.json({ error: "Failed to draft dispute" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to draft dispute" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }
