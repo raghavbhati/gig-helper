@@ -1,6 +1,6 @@
-import { getDatabase, normalizePhoneNumber } from '../../lib/db';
-import { hashPassword, createSessionToken, User } from '../../lib/auth';
-import { sanitizeText } from '../../lib/security';
+import { getDatabase, normalizePhoneNumber } from '../../../lib/db';
+import { hashPassword, createSessionToken, User } from '../../../lib/auth';
+import { sanitizeText } from '../../../lib/security';
 
 export async function onRequestPost(context: any) {
   try {

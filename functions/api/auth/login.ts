@@ -1,5 +1,5 @@
-import { getDatabase, normalizePhoneNumber } from '../../lib/db';
-import { verifyPassword, createSessionToken, User } from '../../lib/auth';
+import { getDatabase, normalizePhoneNumber } from '../../../lib/db';
+import { verifyPassword, createSessionToken, User } from '../../../lib/auth';
 
 export async function onRequestPost(context: any) {
   try {

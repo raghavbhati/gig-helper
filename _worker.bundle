@@ -1,0 +1,1509 @@
+------formdata-undici-034256425593
+Content-Disposition: form-data; name="metadata"
+
+{"main_module":"functionsWorker-0.3965477163102359.js"}
+------formdata-undici-034256425593
+Content-Disposition: form-data; name="functionsWorker-0.3965477163102359.js"; filename="functionsWorker-0.3965477163102359.js"
+Content-Type: application/javascript+module
+
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+  get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+}) : x)(function(x) {
+  if (typeof require !== "undefined")
+    return require.apply(this, arguments);
+  throw new Error('Dynamic require of "' + x + '" is not supported');
+});
+
+// ../lib/db.ts
+var SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    phone_number TEXT UNIQUE NOT NULL,
+    email TEXT,
+    password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    name TEXT NOT NULL,
+    age INTEGER,
+    city TEXT,
+    language TEXT DEFAULT 'hi',
+    emergency_phone TEXT,
+    platforms TEXT DEFAULT '["Swiggy"]',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS shift_audits (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    gross_pay REAL NOT NULL,
+    active_hours REAL NOT NULL,
+    fuel_expense REAL DEFAULT 0,
+    penalty_deduction REAL DEFAULT 0,
+    insurance_deduction REAL DEFAULT 0,
+    net_pay REAL NOT NULL,
+    hourly_rate REAL NOT NULL,
+    discrepancy_flag BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone_number);
+CREATE INDEX IF NOT EXISTS idx_shifts_user ON shift_audits(user_id, date DESC);
+`;
+var localDbInstance = null;
+function getDatabase(cloudflareEnv) {
+  if (cloudflareEnv?.DB) {
+    return cloudflareEnv.DB;
+  }
+  if (!localDbInstance) {
+    try {
+      const req = typeof __require !== "undefined" ? __require : () => null;
+      const nodePath = req("node:path") || req("path");
+      const nodeFs = req("node:fs") || req("fs");
+      const { DatabaseSync } = req("node:sqlite");
+      if (!nodePath || !nodeFs || !DatabaseSync) {
+        return createMemoryDb();
+      }
+      const dataDir = nodePath.join(process.cwd(), ".data");
+      if (!nodeFs.existsSync(dataDir)) {
+        nodeFs.mkdirSync(dataDir, { recursive: true });
+      }
+      const legacyPath = nodePath.join(dataDir, "saathi.sqlite");
+      const dbPath = nodePath.join(dataDir, "gig_kavach.sqlite");
+      if (!nodeFs.existsSync(dbPath) && nodeFs.existsSync(legacyPath)) {
+        try {
+          nodeFs.copyFileSync(legacyPath, dbPath);
+        } catch {
+        }
+      }
+      localDbInstance = new DatabaseSync(dbPath);
+      localDbInstance.exec(SCHEMA_SQL);
+    } catch (err) {
+      console.warn("Local SQLite initialization note:", err);
+      return createMemoryDb();
+    }
+  }
+  return {
+    prepare(query) {
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              const stmt = localDbInstance.prepare(query);
+              const result = stmt.get(...args);
+              return result || null;
+            },
+            async all() {
+              const stmt = localDbInstance.prepare(query);
+              const results = stmt.all(...args);
+              return { results: results || [] };
+            },
+            async run() {
+              const stmt = localDbInstance.prepare(query);
+              const res = stmt.run(...args);
+              return { success: true, meta: res };
+            }
+          };
+        }
+      };
+    },
+    async exec(query) {
+      return localDbInstance.exec(query);
+    }
+  };
+}
+__name(getDatabase, "getDatabase");
+var memoryStore = {
+  users: /* @__PURE__ */ new Map(),
+  shifts: /* @__PURE__ */ new Map()
+};
+function createMemoryDb() {
+  return {
+    prepare(query) {
+      return {
+        bind(...args) {
+          return {
+            async first() {
+              if (query.includes("FROM users WHERE phone_number =")) {
+                const phone = args[0];
+                return memoryStore.users.get(phone) || null;
+              }
+              if (query.includes("FROM users WHERE id =")) {
+                const id = args[0];
+                const allUsers = Array.from(memoryStore.users.values());
+                for (const u of allUsers) {
+                  if (u.id === id)
+                    return u;
+                }
+              }
+              return null;
+            },
+            async all() {
+              if (query.includes("FROM shift_audits WHERE user_id =")) {
+                const userId = args[0];
+                const shifts = memoryStore.shifts.get(userId) || [];
+                return { results: shifts };
+              }
+              return { results: [] };
+            },
+            async run() {
+              if (query.includes("INSERT INTO users")) {
+                const [id, phone, email, pHash, salt, name, age, city, lang, emergency, platforms] = args;
+                memoryStore.users.set(phone, {
+                  id,
+                  phone_number: phone,
+                  email,
+                  password_hash: pHash,
+                  salt,
+                  name,
+                  age,
+                  city,
+                  language: lang,
+                  emergency_phone: emergency,
+                  platforms
+                });
+              }
+              return { success: true };
+            }
+          };
+        }
+      };
+    },
+    async exec() {
+      return true;
+    }
+  };
+}
+__name(createMemoryDb, "createMemoryDb");
+function normalizePhoneNumber(phone) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return digits.slice(2);
+  }
+  if (digits.length === 11 && digits.startsWith("0")) {
+    return digits.slice(1);
+  }
+  return digits;
+}
+__name(normalizePhoneNumber, "normalizePhoneNumber");
+
+// ../lib/auth.ts
+var JWT_SECRET = process.env.AUTH_SECRET || "gig-kavach-worker-secure-secret-key-2026";
+async function hashPassword(password) {
+  const enc = new TextEncoder();
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations: 1e5,
+      hash: "SHA-256"
+    },
+    keyMaterial,
+    256
+  );
+  const hash = Array.from(new Uint8Array(derivedBits)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const salt = Array.from(saltBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return { hash, salt };
+}
+__name(hashPassword, "hashPassword");
+async function verifyPassword(password, storedHash, storedSalt) {
+  try {
+    const enc = new TextEncoder();
+    const saltBytes = new Uint8Array(storedSalt.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveBits"]
+    );
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        salt: saltBytes,
+        iterations: 1e5,
+        hash: "SHA-256"
+      },
+      keyMaterial,
+      256
+    );
+    const checkHash = Array.from(new Uint8Array(derivedBits)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    return checkHash === storedHash;
+  } catch {
+    return false;
+  }
+}
+__name(verifyPassword, "verifyPassword");
+async function createSessionToken(user) {
+  const enc = new TextEncoder();
+  const payload = JSON.stringify({
+    user,
+    exp: Date.now() + 30 * 24 * 60 * 60 * 1e3
+    // 30 days session
+  });
+  const payloadB64 = Buffer.from(payload).toString("base64url");
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(JWT_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(payloadB64));
+  const signatureB64 = Buffer.from(signature).toString("base64url");
+  return `${payloadB64}.${signatureB64}`;
+}
+__name(createSessionToken, "createSessionToken");
+async function verifySessionToken(token) {
+  try {
+    if (!token || !token.includes("."))
+      return null;
+    const [payloadB64, signatureB64] = token.split(".");
+    if (!payloadB64 || !signatureB64)
+      return null;
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(JWT_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    const signature = Buffer.from(signatureB64, "base64url");
+    const isValid = await crypto.subtle.verify("HMAC", key, signature, enc.encode(payloadB64));
+    if (!isValid)
+      return null;
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+    if (payload.exp && Date.now() > payload.exp)
+      return null;
+    return payload.user;
+  } catch {
+    return null;
+  }
+}
+__name(verifySessionToken, "verifySessionToken");
+
+// api/auth/login.ts
+async function onRequestPost(context) {
+  try {
+    const body = await context.request.json();
+    const rawPhone = body.phoneNumber || body.phone;
+    const rawPassword = body.password;
+    if (!rawPhone || !rawPassword) {
+      return new Response(
+        JSON.stringify({ error: "\u092E\u094B\u092C\u093E\u0907\u0932 \u0928\u0902\u092C\u0930 \u0914\u0930 \u092A\u093E\u0938\u0935\u0930\u094D\u0921 \u0926\u094B\u0928\u094B\u0902 \u0906\u0935\u0936\u094D\u092F\u0915 \u0939\u0948\u0902\u0964" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const phoneNumber = normalizePhoneNumber(String(rawPhone));
+    if (phoneNumber.length !== 10) {
+      return new Response(
+        JSON.stringify({ error: "\u0915\u0943\u092A\u092F\u093E \u090F\u0915 \u092E\u093E\u0928\u094D\u092F 10-\u0905\u0902\u0915\u0940\u092F \u092E\u094B\u092C\u093E\u0907\u0932 \u0928\u0902\u092C\u0930 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902\u0964" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const db = getDatabase(context.env);
+    const record = await db.prepare("SELECT * FROM users WHERE phone_number = ?").bind(phoneNumber).first();
+    if (!record) {
+      return new Response(
+        JSON.stringify({ error: "\u092F\u0939 \u092E\u094B\u092C\u093E\u0907\u0932 \u0928\u0902\u092C\u0930 \u092A\u0902\u091C\u0940\u0915\u0943\u0924 \u0928\u0939\u0940\u0902 \u0939\u0948\u0964 \u0915\u0943\u092A\u092F\u093E \u092A\u0939\u0932\u0947 \u0928\u092F\u093E \u0916\u093E\u0924\u093E \u092C\u0928\u093E\u090F\u0902\u0964" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const isMatch = await verifyPassword(
+      String(rawPassword),
+      record.password_hash,
+      record.salt
+    );
+    if (!isMatch) {
+      return new Response(
+        JSON.stringify({ error: "\u092A\u093E\u0938\u0935\u0930\u094D\u0921 \u0917\u0932\u0924 \u0939\u0948\u0964 \u0915\u0943\u092A\u092F\u093E \u0938\u0939\u0940 \u092A\u093E\u0938\u0935\u0930\u094D\u0921 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902\u0964" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    let platforms = ["Swiggy"];
+    try {
+      if (record.platforms) {
+        platforms = JSON.parse(record.platforms);
+      }
+    } catch {
+      platforms = ["Swiggy"];
+    }
+    const user = {
+      id: record.id,
+      phoneNumber: record.phone_number,
+      email: record.email,
+      name: record.name,
+      age: record.age,
+      city: record.city,
+      language: record.language || "hi",
+      emergencyPhone: record.emergency_phone,
+      platforms,
+      createdAt: record.created_at
+    };
+    const token = await createSessionToken(user);
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "\u0938\u092B\u0932\u0924\u093E\u092A\u0942\u0930\u094D\u0935\u0915 \u0932\u0949\u0917\u093F\u0928 \u0939\u094B \u0917\u092F\u093E!",
+        user,
+        token
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Set-Cookie": `saathi_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 3600}`
+        }
+      }
+    );
+  } catch (err) {
+    console.error("Edge Login error:", err);
+    return new Response(
+      JSON.stringify({ error: "\u0932\u0949\u0917\u093F\u0928 \u0915\u0930\u0928\u0947 \u092E\u0947\u0902 \u0938\u092E\u0938\u094D\u092F\u093E \u0906\u0908\u0964 \u0915\u0943\u092A\u092F\u093E \u092A\u0941\u0928\u0903 \u092A\u094D\u0930\u092F\u093E\u0938 \u0915\u0930\u0947\u0902\u0964" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+__name(onRequestPost, "onRequestPost");
+
+// api/auth/logout.ts
+async function onRequestPost2() {
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: "\u0938\u092B\u0932\u0924\u093E\u092A\u0942\u0930\u094D\u0935\u0915 \u0932\u0949\u0917\u0906\u0909\u091F \u0939\u094B \u0917\u092F\u093E\u0964"
+    }),
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Set-Cookie": "saathi_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
+      }
+    }
+  );
+}
+__name(onRequestPost2, "onRequestPost");
+
+// api/auth/me.ts
+async function onRequestGet(context) {
+  try {
+    const cookieHeader = context.request.headers.get("Cookie") || "";
+    const match2 = cookieHeader.match(/saathi_session=([^;]+)/);
+    const authHeader = context.request.headers.get("Authorization") || "";
+    const token = match2 ? match2[1] : authHeader.replace("Bearer ", "");
+    if (!token) {
+      return new Response(JSON.stringify({ authenticated: false, user: null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const user = await verifySessionToken(token);
+    if (!user) {
+      return new Response(JSON.stringify({ authenticated: false, user: null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    const db = getDatabase(context.env);
+    const countRecord = await db.prepare("SELECT COUNT(*) as count FROM shift_audits WHERE user_id = ?").bind(user.id).first();
+    return new Response(
+      JSON.stringify({
+        authenticated: true,
+        user,
+        shiftCount: countRecord?.count || 0
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("Edge me error:", err);
+    return new Response(JSON.stringify({ authenticated: false, user: null }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+}
+__name(onRequestGet, "onRequestGet");
+
+// ../lib/security.ts
+var RATE_LIMIT_WINDOW = 60 * 1e3;
+function sanitizeInput(input, maxLength = 2e3) {
+  if (!input || typeof input !== "string")
+    return "";
+  return input.slice(0, maxLength).replace(/[<>]/g, "").trim();
+}
+__name(sanitizeInput, "sanitizeInput");
+var sanitizeText = sanitizeInput;
+
+// api/auth/signup.ts
+async function onRequestPost3(context) {
+  try {
+    const body = await context.request.json();
+    const rawPhone = body.phoneNumber || body.phone;
+    const rawPassword = body.password;
+    const rawName = body.name;
+    if (!rawPhone || !rawPassword || !rawName) {
+      return new Response(
+        JSON.stringify({ error: "\u092E\u094B\u092C\u093E\u0907\u0932 \u0928\u0902\u092C\u0930, \u0928\u093E\u092E \u0914\u0930 \u092A\u093E\u0938\u0935\u0930\u094D\u0921 \u0906\u0935\u0936\u094D\u092F\u0915 \u0939\u0948\u0902\u0964" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const phoneNumber = normalizePhoneNumber(String(rawPhone));
+    if (phoneNumber.length !== 10) {
+      return new Response(
+        JSON.stringify({ error: "\u0915\u0943\u092A\u092F\u093E \u090F\u0915 \u092E\u093E\u0928\u094D\u092F 10-\u0905\u0902\u0915\u0940\u092F \u092E\u094B\u092C\u093E\u0907\u0932 \u0928\u0902\u092C\u0930 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902\u0964" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    if (String(rawPassword).length < 4) {
+      return new Response(
+        JSON.stringify({ error: "\u092A\u093E\u0938\u0935\u0930\u094D\u0921 \u0915\u092E \u0938\u0947 \u0915\u092E 4 \u0905\u0915\u094D\u0937\u0930\u094B\u0902 \u092F\u093E \u0905\u0902\u0915\u094B\u0902 \u0915\u093E \u0939\u094B\u0928\u093E \u091A\u093E\u0939\u093F\u090F\u0964" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const db = getDatabase(context.env);
+    const existing = await db.prepare("SELECT id FROM users WHERE phone_number = ?").bind(phoneNumber).first();
+    if (existing) {
+      return new Response(
+        JSON.stringify({ error: "\u092F\u0939 \u092E\u094B\u092C\u093E\u0907\u0932 \u0928\u0902\u092C\u0930 \u092A\u0939\u0932\u0947 \u0938\u0947 \u092A\u0902\u091C\u0940\u0915\u0943\u0924 \u0939\u0948\u0964 \u0915\u0943\u092A\u092F\u093E \u0932\u0949\u0917\u093F\u0928 \u0915\u0930\u0947\u0902\u0964" }),
+        { status: 409, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const { hash, salt } = await hashPassword(String(rawPassword));
+    const userId = "usr_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+    const name = sanitizeText(String(rawName));
+    const email = body.email ? sanitizeText(String(body.email)) : null;
+    const age = body.age ? parseInt(String(body.age), 10) : null;
+    const city = body.city ? sanitizeText(String(body.city)) : "Delhi NCR";
+    const language = body.language ? sanitizeText(String(body.language)) : "hi";
+    const emergencyPhone = body.emergencyPhone ? normalizePhoneNumber(String(body.emergencyPhone)) : null;
+    const platforms = Array.isArray(body.platforms) && body.platforms.length > 0 ? body.platforms : ["Swiggy"];
+    await db.prepare(`
+        INSERT INTO users (
+          id, phone_number, email, password_hash, salt, name, age, city, language, emergency_phone, platforms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+      userId,
+      phoneNumber,
+      email,
+      hash,
+      salt,
+      name,
+      age,
+      city,
+      language,
+      emergencyPhone,
+      JSON.stringify(platforms)
+    ).run();
+    const user = {
+      id: userId,
+      phoneNumber,
+      email,
+      name,
+      age,
+      city,
+      language,
+      emergencyPhone,
+      platforms,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    const token = await createSessionToken(user);
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "\u0916\u093E\u0924\u093E \u0938\u092B\u0932\u0924\u093E\u092A\u0942\u0930\u094D\u0935\u0915 \u092C\u0928 \u0917\u092F\u093E!",
+        user,
+        token
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Set-Cookie": `saathi_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 24 * 3600}`
+        }
+      }
+    );
+  } catch (err) {
+    console.error("Edge Signup error:", err);
+    return new Response(
+      JSON.stringify({ error: "\u0916\u093E\u0924\u093E \u092C\u0928\u093E\u0928\u0947 \u092E\u0947\u0902 \u0938\u092E\u0938\u094D\u092F\u093E \u0906\u0908\u0964 \u0915\u0943\u092A\u092F\u093E \u092A\u0941\u0928\u0903 \u092A\u094D\u0930\u092F\u093E\u0938 \u0915\u0930\u0947\u0902\u0964" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+__name(onRequestPost3, "onRequestPost");
+
+// api/user/sync.ts
+async function onRequestPost4(context) {
+  try {
+    const cookieHeader = context.request.headers.get("Cookie") || "";
+    const match2 = cookieHeader.match(/saathi_session=([^;]+)/);
+    const authHeader = context.request.headers.get("Authorization") || "";
+    const token = match2 ? match2[1] : authHeader.replace("Bearer ", "");
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: "\u0915\u094D\u0932\u093E\u0909\u0921 \u0938\u093F\u0902\u0915 \u0915\u0947 \u0932\u093F\u090F \u0932\u0949\u0917\u093F\u0928 \u0906\u0935\u0936\u094D\u092F\u0915 \u0939\u0948\u0964" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const user = await verifySessionToken(token);
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "\u0938\u0924\u094D\u0930 \u0938\u092E\u093E\u092A\u094D\u0924 \u0939\u094B \u0917\u092F\u093E \u0939\u0948\u0964 \u0915\u0943\u092A\u092F\u093E \u092A\u0941\u0928\u0903 \u0932\u0949\u0917\u093F\u0928 \u0915\u0930\u0947\u0902\u0964" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const body = await context.request.json();
+    const clientShifts = Array.isArray(body.shifts) ? body.shifts : [];
+    const db = getDatabase(context.env);
+    for (const shift of clientShifts) {
+      if (!shift.id || !shift.date)
+        continue;
+      const fuel = shift.deductions?.fuelEstimate || 0;
+      const penalty = shift.deductions?.penalty || 0;
+      const hasDiscrepancy = shift.discrepancyAlert ? 1 : 0;
+      const platformName = shift.source || "Swiggy";
+      await db.prepare(`
+          INSERT INTO shift_audits (
+            id, user_id, date, platform, gross_pay, active_hours,
+            fuel_expense, penalty_deduction, net_pay, hourly_rate, discrepancy_flag
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            gross_pay = excluded.gross_pay,
+            net_pay = excluded.net_pay,
+            hourly_rate = excluded.hourly_rate
+        `).bind(
+        shift.id,
+        user.id,
+        shift.date,
+        platformName,
+        shift.grossPay,
+        shift.activeHours,
+        fuel,
+        penalty,
+        shift.netPay,
+        shift.realHourlyWage,
+        hasDiscrepancy
+      ).run();
+    }
+    const cloudShifts = await db.prepare("SELECT * FROM shift_audits WHERE user_id = ? ORDER BY date DESC").bind(user.id).all();
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `${clientShifts.length} \u0936\u093F\u092B\u094D\u091F \u0915\u094D\u0932\u093E\u0909\u0921 \u092E\u0947\u0902 \u0938\u0941\u0930\u0915\u094D\u0937\u093F\u0924 \u0938\u093F\u0902\u0915 \u0939\u094B \u0917\u0908\u0902!`,
+        totalSynced: cloudShifts.results.length,
+        syncedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        cloudShifts: cloudShifts.results
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("Edge shift sync error:", err);
+    return new Response(
+      JSON.stringify({ error: "\u0936\u093F\u092B\u094D\u091F \u0938\u093F\u0902\u0915 \u0915\u0930\u0928\u0947 \u092E\u0947\u0902 \u0938\u092E\u0938\u094D\u092F\u093E \u0906\u0908\u0964" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
+__name(onRequestPost4, "onRequestPost");
+
+// api/analyze-earnings.ts
+async function onRequestPost5(context) {
+  try {
+    const { imageBase64, textInput, persona = "delivery" } = await context.request.json();
+    const apiKey = context.env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    let resultJson = null;
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Saathi-AI, an expert financial auditor for gig and informal workers (delivery riders, drivers, daily-wage laborers).
+Analyze the provided earnings screenshot or text.
+Extract or calculate:
+- grossPay (number)
+- ordersOrTrips (number)
+- activeHours (number)
+- tips (number)
+- surge (number)
+- fuelEstimate (number, around 20-25% of gross if motorized)
+- platformCommission (number)
+- penalty (number, any deductions or fines)
+- penaltyReason (short string explaining the deduction)
+- netPay (grossPay - fuelEstimate - platformCommission - penalty)
+- realHourlyWage (netPay / activeHours)
+- statutoryMinHourlyWage (default 95 INR/hr)
+- discrepancyAlert (string explaining if penalty is unfair, e.g. rain/traffic/cancellation, or null)
+- explanationHindi (3-sentence simple Hindi explanation avoiding corporate jargon)
+- explanationEnglish (clear 3-sentence English explanation)
+
+Return ONLY valid JSON matching this schema:
+{
+  "grossPay": number,
+  "ordersOrTrips": number,
+  "activeHours": number,
+  "tips": number,
+  "surge": number,
+  "deductions": {
+    "fuelEstimate": number,
+    "platformCommission": number,
+    "penalty": number,
+    "penaltyReason": string
+  },
+  "netPay": number,
+  "realHourlyWage": number,
+  "statutoryMinHourlyWage": number,
+  "discrepancyAlert": string,
+  "explanationHindi": string,
+  "explanationEnglish": string
+}`;
+        const contents = [];
+        const parts = [];
+        if (imageBase64) {
+          parts.push({
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: imageBase64.replace(/^data:image\/\w+;base64,/, "")
+            }
+          });
+        }
+        parts.push({ text: systemPrompt + "\nUser Input:\n" + (textInput || "Analyze uploaded image") });
+        contents.push({ parts });
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents, generationConfig: { temperature: 0.2, maxOutputTokens: 1500 } })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            resultJson = JSON.parse(cleaned);
+          }
+        }
+      } catch (err) {
+        console.warn("Cloudflare Pages Gemini call error:", err);
+      }
+    }
+    if (!resultJson) {
+      const gross = textInput?.includes("uber") ? 2200 : 1350;
+      const hours = 10;
+      const fuel = Math.round(gross * 0.22);
+      const penalty = 350;
+      const net = gross - fuel - penalty;
+      const wage = Math.round(net / hours * 10) / 10;
+      resultJson = {
+        grossPay: gross,
+        ordersOrTrips: 12,
+        activeHours: hours,
+        tips: 60,
+        surge: 140,
+        deductions: {
+          fuelEstimate: fuel,
+          platformCommission: 0,
+          penalty,
+          penaltyReason: "Customer Delay Escalation (Order #SW-8812) - Traffic/Monsoon bottleneck"
+        },
+        netPay: net,
+        realHourlyWage: wage,
+        statutoryMinHourlyWage: 95,
+        discrepancyAlert: "Unfair Deduction Detected: Delay was logged during evening monsoon peak with documented road waterlogging. Under platform fair conduct norms, environmental bottlenecks cannot be penalized on partner payouts.",
+        explanationHindi: `\u0906\u092A\u0928\u0947 ${hours} \u0918\u0902\u091F\u0947 \u0915\u093E\u092E \u0915\u0930\u0915\u0947 \u20B9${gross} \u0915\u092E\u093E\u090F, \u0932\u0947\u0915\u093F\u0928 \u20B9${fuel} \u092A\u0947\u091F\u094D\u0930\u094B\u0932 \u0914\u0930 \u20B9${penalty} \u0915\u0940 \u092A\u0947\u0928\u0932\u094D\u091F\u0940 \u0915\u091F\u0928\u0947 \u0915\u0947 \u092C\u093E\u0926 \u0906\u092A\u0915\u0947 \u0939\u093E\u0925 \u092E\u0947\u0902 \u0938\u093F\u0930\u094D\u092B \u20B9${net} (\u092F\u093E\u0928\u0940 \u20B9${wage}/\u0918\u0902\u091F\u093E) \u0906\u090F, \u091C\u094B \u0928\u094D\u092F\u0942\u0928\u0924\u092E \u092E\u091C\u0926\u0942\u0930\u0940 \u0938\u0947 \u0915\u092E \u0939\u0948\u0964 \u092F\u0939 \u092A\u0947\u0928\u0932\u094D\u091F\u0940 \u092C\u093E\u0930\u093F\u0936 \u0915\u0940 \u0935\u091C\u0939 \u0938\u0947 \u0915\u091F\u0940 \u0939\u0948 \u0914\u0930 \u0906\u092A \u0907\u0938\u0947 \u0935\u093E\u092A\u0938 \u092A\u093E\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F \u0915\u094D\u0932\u0947\u092E \u0915\u0930 \u0938\u0915\u0924\u0947 \u0939\u0948\u0902\u0964`,
+        explanationEnglish: `You earned \u20B9${gross} across ${hours} hours, but deductions for \u20B9${fuel} fuel and \u20B9${penalty} penalty reduced your net take-home to \u20B9${net} (\u20B9${wage}/hr, below the \u20B995/hr benchmark). The delay was weather-induced and can be appealed for an immediate refund.`
+      };
+    }
+    return new Response(JSON.stringify(resultJson), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Failed to analyze earnings" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+}
+__name(onRequestPost5, "onRequestPost");
+
+// api/chat.ts
+async function onRequestPost6(context) {
+  try {
+    const { message, language = "hinglish", persona = "delivery" } = await context.request.json();
+    const apiKey = context.env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    let reply = null;
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Saathi (\u0938\u093E\u0925\u0940), an empathetic, smart, street-savvy AI guardian for gig and informal workers (food delivery riders, cab/auto drivers, daily-wage laborers).
+The user is speaking in ${language}.
+Their persona is: ${persona}.
+Answer in their selected language (${language}). Keep the tone warm, respectful, concise (max 3-4 sentences), and crystal clear.
+Do NOT use legal jargon. Explain rules using everyday street analogies.
+Always give 1 actionable next step (e.g. check e-Shram card, take screenshot, file dispute).`;
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}
+User says: ${message}` }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 600 }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          reply = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+        }
+      } catch (e) {
+        console.warn("Cloudflare Pages Gemini chat error:", e);
+      }
+    }
+    if (!reply) {
+      const msgLower = (message || "").toLowerCase();
+      if (msgLower.includes("penalty") || msgLower.includes("kat gaya") || msgLower.includes("cut") || msgLower.includes("fine")) {
+        reply = language === "en" ? "I hear you. If a platform deducted a penalty unfairly, do not let it go. Go to our 'Dispute Drafter' tab above, attach your order number or voice note, and I will generate a formal appeal citing weather and platform guidelines to get your money refunded." : "\u091A\u093F\u0902\u0924\u093E \u092E\u0924 \u0915\u0940\u091C\u093F\u090F\u0964 \u0905\u0917\u0930 \u0915\u0902\u092A\u0928\u0940 \u0928\u0947 \u0917\u0932\u0924 \u092A\u0947\u0928\u0932\u094D\u091F\u0940 \u0915\u093E\u091F\u0940 \u0939\u0948 \u0924\u094B \u091A\u0941\u092A \u092E\u0924 \u092C\u0948\u0920\u093F\u090F\u0964 \u090A\u092A\u0930 '\u0936\u093F\u0915\u093E\u092F\u0924 \u092A\u0924\u094D\u0930 \u0932\u093F\u0916\u0947\u0902' \u091F\u0948\u092C \u092A\u0930 \u091C\u093E\u090F\u0902, \u0905\u092A\u0928\u093E \u0906\u0930\u094D\u0921\u0930 \u0928\u0902\u092C\u0930 \u092C\u0924\u093E\u090F\u0902, \u0914\u0930 \u092E\u0948\u0902 \u0906\u092A\u0915\u0947 \u0932\u093F\u090F \u0924\u0941\u0930\u0902\u0924 \u0915\u0902\u092A\u0928\u0940 \u0915\u094B \u092D\u0947\u091C\u0928\u0947 \u0935\u093E\u0932\u093E \u0915\u093E\u0928\u0942\u0928\u0940 \u0905\u092A\u0940\u0932 \u092A\u0924\u094D\u0930 \u0924\u0948\u092F\u093E\u0930 \u0915\u0930 \u0926\u0942\u0902\u0917\u093E\u0964";
+      } else if (msgLower.includes("scheme") || msgLower.includes("sarkari") || msgLower.includes("yojana") || msgLower.includes("bima") || msgLower.includes("insurance")) {
+        reply = language === "en" ? "As an informal or gig worker, you are entitled to the government's e-Shram card which provides \u20B92 Lakh accident coverage for free, plus the State Gig Worker Welfare Fund. Check the 'Welfare Schemes' tab to verify your eligibility in 30 seconds." : "\u0906\u092A \u092D\u093E\u0930\u0924 \u0938\u0930\u0915\u093E\u0930 \u0915\u0947 \u0908-\u0936\u094D\u0930\u092E (e-Shram) \u0915\u093E\u0930\u094D\u0921 \u0915\u0947 \u0939\u0915\u0926\u093E\u0930 \u0939\u0948\u0902, \u091C\u093F\u0938\u092E\u0947\u0902 \u092E\u0941\u092B\u094D\u0924 \u20B92 \u0932\u093E\u0916 \u0915\u093E \u0926\u0941\u0930\u094D\u0918\u091F\u0928\u093E \u092C\u0940\u092E\u093E \u092E\u093F\u0932\u0924\u093E \u0939\u0948\u0964 \u0907\u0938\u0915\u0947 \u0905\u0932\u093E\u0935\u093E \u0930\u093E\u091C\u094D\u092F \u0917\u093F\u0917 \u0935\u0930\u094D\u0915\u0930 \u092C\u094B\u0930\u094D\u0921 \u0915\u093E \u092B\u0902\u0921 \u092D\u0940 \u0939\u0948\u0964 \u090A\u092A\u0930 '\u0938\u0930\u0915\u093E\u0930\u0940 \u092F\u094B\u091C\u0928\u093E\u090F\u0902' \u091F\u0948\u092C \u092E\u0947\u0902 \u0926\u0947\u0916\u0947\u0902 \u0914\u0930 \u0924\u0941\u0930\u0902\u0924 \u0906\u0935\u0947\u0926\u0928 \u0915\u093E \u0924\u0930\u0940\u0915\u093E \u091C\u093E\u0928\u0947\u0902\u0964";
+      } else {
+        reply = language === "en" ? "Namaste! I am Saathi. You can ask me to audit your delivery payout slips, write complaint letters for unfair penalties, check government welfare schemes, or simplify confusing company rules. How can I assist your shift today?" : "\u0928\u092E\u0938\u094D\u0924\u0947 \u0938\u093E\u0925\u0940! \u092E\u0948\u0902 \u0906\u092A\u0915\u093E \u0915\u093E\u0928\u0942\u0928\u0940 \u0914\u0930 \u0915\u092E\u093E\u0908 \u0915\u093E \u0921\u093F\u091C\u093F\u091F\u0932 \u092E\u0926\u0926\u0917\u093E\u0930 \u0939\u0942\u0901\u0964 \u0906\u092A \u092E\u0941\u091D\u0938\u0947 \u0905\u092A\u0928\u0940 \u0915\u092E\u093E\u0908 \u0915\u093E \u0939\u093F\u0938\u093E\u092C \u091A\u0947\u0915 \u0915\u0930\u0935\u093E \u0938\u0915\u0924\u0947 \u0939\u0948\u0902, \u0917\u0932\u0924 \u0915\u091F\u0940 \u092A\u0947\u0928\u0932\u094D\u091F\u0940 \u0915\u0940 \u0936\u093F\u0915\u093E\u092F\u0924 \u0932\u093F\u0916\u0935\u093E \u0938\u0915\u0924\u0947 \u0939\u0948\u0902, \u092F\u093E \u0938\u0930\u0915\u093E\u0930\u0940 \u092C\u0940\u092E\u093E \u092F\u094B\u091C\u0928\u093E\u090F\u0902 \u0938\u092E\u091D \u0938\u0915\u0924\u0947 \u0939\u0948\u0902\u0964 \u092C\u0924\u093E\u0907\u090F \u0906\u091C \u092E\u0948\u0902 \u0906\u092A\u0915\u0940 \u0915\u094D\u092F\u093E \u092E\u0926\u0926 \u0915\u0930\u0942\u0901?";
+      }
+    }
+    return new Response(JSON.stringify({ reply }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Failed to process chat" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+}
+__name(onRequestPost6, "onRequestPost");
+
+// api/draft-dispute.ts
+async function onRequestPost7(context) {
+  try {
+    const {
+      incidentDescription,
+      platformName = "Platform Aggregator",
+      orderOrTicketId = "N/A",
+      workerName = "Partner / Worker",
+      workerPhone = "98XXXXXXXX",
+      workerPersona = "delivery",
+      deductionAmount = "350"
+    } = await context.request.json();
+    const apiKey = context.env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    let resultJson = null;
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Saathi-AI, a legal advocacy assistant for gig and unorganized informal workers.
+Generate a multi-tier dispute escalation bundle for the following incident:
+Platform: ${platformName}
+Worker: ${workerName} (${workerPhone}, ${workerPersona})
+Order/Ticket: ${orderOrTicketId}
+Deduction/Issue: \u20B9${deductionAmount}
+Incident Details: ${incidentDescription}
+
+Return ONLY valid JSON matching:
+{
+  "incidentSummary": string,
+  "inAppSupportMessage": string,
+  "officialEscalationEmail": {
+    "subject": string,
+    "body": string
+  },
+  "laborCommissionerPetition": {
+    "title": string,
+    "body": string,
+    "relevantLegalActs": string[]
+  }
+}`;
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 1500 }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            resultJson = JSON.parse(cleaned);
+          }
+        }
+      } catch (e) {
+        console.warn("Cloudflare Pages Gemini draft-dispute error:", e);
+      }
+    }
+    if (!resultJson) {
+      resultJson = {
+        incidentSummary: `Dispute against arbitrary penalty of \u20B9${deductionAmount} on Order/Trip #${orderOrTicketId} on ${platformName}.`,
+        inAppSupportMessage: `Hi Support Team, regarding Order #${orderOrTicketId}, an unfair penalty of \u20B9${deductionAmount} was deducted from my payout. The delay was entirely caused by adverse weather/traffic conditions beyond rider control. I completed delivery in good faith with customer verification. Kindly review my GPS breadcrumb and reverse this penalty immediately.`,
+        officialEscalationEmail: {
+          subject: `URGENT: Appeal Against Wrongful Payout Deduction - Partner ID: ${workerPhone} - Ref #${orderOrTicketId}`,
+          body: `To,
+The Grievance Redressal Officer & Operations Lead
+${platformName} Operations India
+
+Respected Sir/Madam,
+
+I am writing to register an urgent appeal against a wrongful penalty deduction of \u20B9${deductionAmount} levied on my partner account for Order/Trip Ref: #${orderOrTicketId}.
+
+Incident Summary:
+${incidentDescription}
+
+Grounds of Appeal:
+1. Force Majeure & Environmental Obstacles: The recorded transit duration was influenced by documented heavy rainfall and waterlogging in the sector, not rider negligence.
+2. Good Faith Fulfilment: The delivery was successfully handed over with direct confirmation from the customer doorstep.
+3. Lack of Human Review: The penalty was executed algorithmically without providing me an opportunity to explain or submit route telemetry.
+
+In accordance with fair partnership guidelines and statutory gig worker welfare norms, I request an immediate reversal and credit of \u20B9${deductionAmount} to my linked bank account within 48 hours.
+
+Sincerely,
+${workerName}
+Registered Contact: ${workerPhone}`
+        },
+        laborCommissionerPetition: {
+          title: `FORMAL GRIEVANCE PETITION UNDER GIG & UNORGANIZED WORKERS WELFARE GUIDELINES`,
+          body: `BEFORE THE DISTRICT LABOR OFFICER & GIG WORKERS WELFARE TRIBUNAL
+
+In the Matter of: ${workerName} (Complainant)
+Versus
+${platformName} (Respondent Aggregator)
+
+COMPLAINT UNDER SECTION 7 (UNLAWFUL DEDUCTIONS) & SOCIAL SECURITY CODE
+
+1. The Complainant is a registered platform worker providing frontline delivery/transit services through Respondent's digital application.
+2. On the date in question (Ref #${orderOrTicketId}), Respondent unilaterally withheld an amount of \u20B9${deductionAmount} from Complainant's weekly payout without due process or show-cause inquiry.
+3. The stated reason for penalty is invalid, as the delay resulted from extreme local weather and traffic conditions beyond Complainant's reasonable control.
+4. Such arbitrary deduction violates Section 7 of the Payment of Wages Act and the Fair Grievance Redressal Framework of the Platform Based Gig Workers Act.
+
+PRAYER:
+The Complainant respectfully prays that this Hon'ble Authority direct the Respondent to:
+a) Refund the illegally withheld sum of \u20B9${deductionAmount} with applicable interest.
+b) Refrain from negative algorithmic rating throttling or retaliatory account suspension.
+
+Date: ${(/* @__PURE__ */ new Date()).toLocaleDateString()}
+Applicant: ${workerName}`,
+          relevantLegalActs: [
+            "Code on Social Security 2020 (Sections 113-114: Gig & Platform Workers Welfare)",
+            "Payment of Wages Act 1936 (Section 7: Deductions for Damage or Loss)",
+            "State Platform Based Gig Workers Welfare & Social Security Act",
+            "Consumer Protection (E-Commerce) Rules 2020 (Unfair Contract Terms)"
+          ]
+        }
+      };
+    }
+    return new Response(JSON.stringify(resultJson), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Failed to draft dispute" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+}
+__name(onRequestPost7, "onRequestPost");
+
+// api/explain-doc.ts
+async function onRequestPost8(context) {
+  try {
+    const { documentText, imageBase64, language = "hi" } = await context.request.json();
+    const apiKey = context.env?.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    let resultJson = null;
+    if (apiKey) {
+      try {
+        const systemPrompt = `You are Saathi-AI, a legal and contract simplification assistant for informal & gig workers.
+Analyze the provided document excerpt or image (contract clause, deactivation notice, insurance policy, wage memo).
+Explain it in simple, everyday language that a semi-literate worker can immediately understand.
+
+Provide:
+1. simplifiedWhatIsIt: "Yeh kagaz kya hai?" (1 simple sentence)
+2. simplifiedImpact: "Aapki kamai aur kaam par kya asar padega?" (2 simple sentences)
+3. recommendedAction: "Aapko abhi turant kya karna chahiye?" (actionable bullet points)
+4. trapWarning: High-risk warning if this clause is one-sided, unfair, or dangerous, otherwise null.
+
+Respond in JSON matching:
+{
+  "simplifiedWhatIsIt": string,
+  "simplifiedImpact": string,
+  "recommendedAction": string,
+  "trapWarning": string | null
+}`;
+        const contents = [];
+        const parts = [];
+        if (imageBase64) {
+          parts.push({
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: imageBase64.replace(/^data:image\/\w+;base64,/, "")
+            }
+          });
+        }
+        parts.push({ text: systemPrompt + "\nDocument content:\n" + (documentText || "Document Image") });
+        contents.push({ parts });
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents, generationConfig: { temperature: 0.2, maxOutputTokens: 1500 } })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            resultJson = JSON.parse(cleaned);
+          }
+        }
+      } catch (e) {
+        console.warn("Cloudflare Pages Gemini explain-doc error:", e);
+      }
+    }
+    if (!resultJson) {
+      resultJson = {
+        simplifiedWhatIsIt: "\u092F\u0939 \u0915\u0902\u092A\u0928\u0940 \u0914\u0930 \u0906\u092A\u0915\u0947 \u092C\u0940\u091A \u0915\u093E \u0938\u0930\u094D\u0935\u093F\u0938 \u090F\u0917\u094D\u0930\u0940\u092E\u0947\u0902\u091F \u0915\u094D\u0932\u0949\u091C \u0939\u0948 \u091C\u094B \u0905\u0915\u093E\u0909\u0902\u091F \u0921\u0940\u090F\u0915\u094D\u091F\u093F\u0935\u0947\u0936\u0928 \u0914\u0930 \u092A\u0947\u0928\u0932\u094D\u091F\u0940 \u0915\u0947 \u0928\u093F\u092F\u092E\u094B\u0902 \u0915\u094B \u0924\u092F \u0915\u0930\u0924\u093E \u0939\u0948\u0964",
+        simplifiedImpact: "\u0905\u0917\u0930 \u0917\u094D\u0930\u093E\u0939\u0915 \u0915\u094B\u0908 \u0936\u093F\u0915\u093E\u092F\u0924 \u0926\u0930\u094D\u091C \u0915\u0930\u0924\u093E \u0939\u0948 \u092F\u093E \u0910\u092A \u092E\u0947\u0902 \u0915\u094B\u0908 \u0917\u095C\u092C\u095C\u0940 \u0906\u0924\u0940 \u0939\u0948, \u0924\u094B \u0915\u0902\u092A\u0928\u0940 \u092C\u093F\u0928\u093E \u0906\u092A\u0915\u0940 \u092C\u093E\u0924 \u0938\u0941\u0928\u0947 \u0906\u092A\u0915\u0940 \u0906\u0908\u0921\u0940 \u092C\u094D\u0932\u0949\u0915 \u0915\u0930 \u0938\u0915\u0924\u0940 \u0939\u0948 \u0914\u0930 \u0909\u0938 \u0939\u092B\u094D\u0924\u0947 \u0915\u093E \u092A\u0948\u0938\u093E \u0930\u094B\u0915 \u0938\u0915\u0924\u0940 \u0939\u0948\u0964",
+        recommendedAction: "1. \u0939\u0930 \u0921\u093F\u0932\u0940\u0935\u0930\u0940 \u0915\u0940 \u092B\u094B\u091F\u094B \u0914\u0930 \u0915\u0938\u094D\u091F\u092E\u0930 \u091A\u0948\u091F \u0905\u092A\u0928\u0947 \u092B\u094B\u0928 \u092E\u0947\u0902 \u0938\u0941\u0930\u0915\u094D\u0937\u093F\u0924 \u0930\u0916\u0947\u0902\u0964 2. \u0905\u0917\u0930 \u0906\u0908\u0921\u0940 \u092C\u094D\u0932\u0949\u0915 \u0939\u094B\u0924\u0940 \u0939\u0948, \u0924\u094B 'Dispute Drafter' \u091F\u0948\u092C \u0938\u0947 \u0924\u0941\u0930\u0902\u0924 \u0906\u0927\u093F\u0915\u093E\u0930\u093F\u0915 \u0905\u092A\u0940\u0932 \u092D\u0947\u091C\u0947\u0902\u0964",
+        trapWarning: "\u26A0\uFE0F \u091A\u0947\u0924\u093E\u0935\u0928\u0940: \u092F\u0939 \u0915\u094D\u0932\u0949\u091C \u090F\u0915\u0924\u0930\u092B\u093E \u0939\u0948\u0964 \u092D\u093E\u0930\u0924\u0940\u092F \u0909\u092A\u092D\u094B\u0915\u094D\u0924\u093E \u0914\u0930 \u0936\u094D\u0930\u092E \u0915\u093E\u0928\u0942\u0928\u094B\u0902 \u0915\u0947 \u0924\u0939\u0924 \u092C\u093F\u0928\u093E \u0938\u094D\u092A\u0937\u094D\u091F\u0940\u0915\u0930\u0923 \u0915\u093E \u092E\u094C\u0915\u093E \u0926\u093F\u090F \u0906\u0908\u0921\u0940 \u092C\u0902\u0926 \u0915\u0930\u0928\u093E \u0917\u0948\u0930\u0915\u093E\u0928\u0942\u0928\u0940 \u092E\u093E\u0928\u093E \u0917\u092F\u093E \u0939\u0948\u0964"
+      };
+    }
+    return new Response(JSON.stringify(resultJson), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "Failed to explain document" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+}
+__name(onRequestPost8, "onRequestPost");
+
+// ../.wrangler/tmp/pages-9kYmeO/functionsRoutes-0.8405324808409236.mjs
+var routes = [
+  {
+    routePath: "/api/auth/login",
+    mountPath: "/api/auth",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost]
+  },
+  {
+    routePath: "/api/auth/logout",
+    mountPath: "/api/auth",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost2]
+  },
+  {
+    routePath: "/api/auth/me",
+    mountPath: "/api/auth",
+    method: "GET",
+    middlewares: [],
+    modules: [onRequestGet]
+  },
+  {
+    routePath: "/api/auth/signup",
+    mountPath: "/api/auth",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost3]
+  },
+  {
+    routePath: "/api/user/sync",
+    mountPath: "/api/user",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost4]
+  },
+  {
+    routePath: "/api/analyze-earnings",
+    mountPath: "/api",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost5]
+  },
+  {
+    routePath: "/api/chat",
+    mountPath: "/api",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost6]
+  },
+  {
+    routePath: "/api/draft-dispute",
+    mountPath: "/api",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost7]
+  },
+  {
+    routePath: "/api/explain-doc",
+    mountPath: "/api",
+    method: "POST",
+    middlewares: [],
+    modules: [onRequestPost8]
+  }
+];
+
+// ../node_modules/path-to-regexp/dist.es2015/index.js
+function lexer(str) {
+  var tokens = [];
+  var i = 0;
+  while (i < str.length) {
+    var char = str[i];
+    if (char === "*" || char === "+" || char === "?") {
+      tokens.push({ type: "MODIFIER", index: i, value: str[i++] });
+      continue;
+    }
+    if (char === "\\") {
+      tokens.push({ type: "ESCAPED_CHAR", index: i++, value: str[i++] });
+      continue;
+    }
+    if (char === "{") {
+      tokens.push({ type: "OPEN", index: i, value: str[i++] });
+      continue;
+    }
+    if (char === "}") {
+      tokens.push({ type: "CLOSE", index: i, value: str[i++] });
+      continue;
+    }
+    if (char === ":") {
+      var name = "";
+      var j = i + 1;
+      while (j < str.length) {
+        var code = str.charCodeAt(j);
+        if (
+          // `0-9`
+          code >= 48 && code <= 57 || // `A-Z`
+          code >= 65 && code <= 90 || // `a-z`
+          code >= 97 && code <= 122 || // `_`
+          code === 95
+        ) {
+          name += str[j++];
+          continue;
+        }
+        break;
+      }
+      if (!name)
+        throw new TypeError("Missing parameter name at ".concat(i));
+      tokens.push({ type: "NAME", index: i, value: name });
+      i = j;
+      continue;
+    }
+    if (char === "(") {
+      var count = 1;
+      var pattern = "";
+      var j = i + 1;
+      if (str[j] === "?") {
+        throw new TypeError('Pattern cannot start with "?" at '.concat(j));
+      }
+      while (j < str.length) {
+        if (str[j] === "\\") {
+          pattern += str[j++] + str[j++];
+          continue;
+        }
+        if (str[j] === ")") {
+          count--;
+          if (count === 0) {
+            j++;
+            break;
+          }
+        } else if (str[j] === "(") {
+          count++;
+          if (str[j + 1] !== "?") {
+            throw new TypeError("Capturing groups are not allowed at ".concat(j));
+          }
+        }
+        pattern += str[j++];
+      }
+      if (count)
+        throw new TypeError("Unbalanced pattern at ".concat(i));
+      if (!pattern)
+        throw new TypeError("Missing pattern at ".concat(i));
+      tokens.push({ type: "PATTERN", index: i, value: pattern });
+      i = j;
+      continue;
+    }
+    tokens.push({ type: "CHAR", index: i, value: str[i++] });
+  }
+  tokens.push({ type: "END", index: i, value: "" });
+  return tokens;
+}
+__name(lexer, "lexer");
+function parse(str, options) {
+  if (options === void 0) {
+    options = {};
+  }
+  var tokens = lexer(str);
+  var _a = options.prefixes, prefixes = _a === void 0 ? "./" : _a, _b = options.delimiter, delimiter = _b === void 0 ? "/#?" : _b;
+  var result = [];
+  var key = 0;
+  var i = 0;
+  var path = "";
+  var tryConsume = /* @__PURE__ */ __name(function(type) {
+    if (i < tokens.length && tokens[i].type === type)
+      return tokens[i++].value;
+  }, "tryConsume");
+  var mustConsume = /* @__PURE__ */ __name(function(type) {
+    var value2 = tryConsume(type);
+    if (value2 !== void 0)
+      return value2;
+    var _a2 = tokens[i], nextType = _a2.type, index = _a2.index;
+    throw new TypeError("Unexpected ".concat(nextType, " at ").concat(index, ", expected ").concat(type));
+  }, "mustConsume");
+  var consumeText = /* @__PURE__ */ __name(function() {
+    var result2 = "";
+    var value2;
+    while (value2 = tryConsume("CHAR") || tryConsume("ESCAPED_CHAR")) {
+      result2 += value2;
+    }
+    return result2;
+  }, "consumeText");
+  var isSafe = /* @__PURE__ */ __name(function(value2) {
+    for (var _i = 0, delimiter_1 = delimiter; _i < delimiter_1.length; _i++) {
+      var char2 = delimiter_1[_i];
+      if (value2.indexOf(char2) > -1)
+        return true;
+    }
+    return false;
+  }, "isSafe");
+  var safePattern = /* @__PURE__ */ __name(function(prefix2) {
+    var prev = result[result.length - 1];
+    var prevText = prefix2 || (prev && typeof prev === "string" ? prev : "");
+    if (prev && !prevText) {
+      throw new TypeError('Must have text between two parameters, missing text after "'.concat(prev.name, '"'));
+    }
+    if (!prevText || isSafe(prevText))
+      return "[^".concat(escapeString(delimiter), "]+?");
+    return "(?:(?!".concat(escapeString(prevText), ")[^").concat(escapeString(delimiter), "])+?");
+  }, "safePattern");
+  while (i < tokens.length) {
+    var char = tryConsume("CHAR");
+    var name = tryConsume("NAME");
+    var pattern = tryConsume("PATTERN");
+    if (name || pattern) {
+      var prefix = char || "";
+      if (prefixes.indexOf(prefix) === -1) {
+        path += prefix;
+        prefix = "";
+      }
+      if (path) {
+        result.push(path);
+        path = "";
+      }
+      result.push({
+        name: name || key++,
+        prefix,
+        suffix: "",
+        pattern: pattern || safePattern(prefix),
+        modifier: tryConsume("MODIFIER") || ""
+      });
+      continue;
+    }
+    var value = char || tryConsume("ESCAPED_CHAR");
+    if (value) {
+      path += value;
+      continue;
+    }
+    if (path) {
+      result.push(path);
+      path = "";
+    }
+    var open = tryConsume("OPEN");
+    if (open) {
+      var prefix = consumeText();
+      var name_1 = tryConsume("NAME") || "";
+      var pattern_1 = tryConsume("PATTERN") || "";
+      var suffix = consumeText();
+      mustConsume("CLOSE");
+      result.push({
+        name: name_1 || (pattern_1 ? key++ : ""),
+        pattern: name_1 && !pattern_1 ? safePattern(prefix) : pattern_1,
+        prefix,
+        suffix,
+        modifier: tryConsume("MODIFIER") || ""
+      });
+      continue;
+    }
+    mustConsume("END");
+  }
+  return result;
+}
+__name(parse, "parse");
+function match(str, options) {
+  var keys = [];
+  var re = pathToRegexp(str, keys, options);
+  return regexpToFunction(re, keys, options);
+}
+__name(match, "match");
+function regexpToFunction(re, keys, options) {
+  if (options === void 0) {
+    options = {};
+  }
+  var _a = options.decode, decode = _a === void 0 ? function(x) {
+    return x;
+  } : _a;
+  return function(pathname) {
+    var m = re.exec(pathname);
+    if (!m)
+      return false;
+    var path = m[0], index = m.index;
+    var params = /* @__PURE__ */ Object.create(null);
+    var _loop_1 = /* @__PURE__ */ __name(function(i2) {
+      if (m[i2] === void 0)
+        return "continue";
+      var key = keys[i2 - 1];
+      if (key.modifier === "*" || key.modifier === "+") {
+        params[key.name] = m[i2].split(key.prefix + key.suffix).map(function(value) {
+          return decode(value, key);
+        });
+      } else {
+        params[key.name] = decode(m[i2], key);
+      }
+    }, "_loop_1");
+    for (var i = 1; i < m.length; i++) {
+      _loop_1(i);
+    }
+    return { path, index, params };
+  };
+}
+__name(regexpToFunction, "regexpToFunction");
+function escapeString(str) {
+  return str.replace(/([.+*?=^!:${}()[\]|/\\])/g, "\\$1");
+}
+__name(escapeString, "escapeString");
+function flags(options) {
+  return options && options.sensitive ? "" : "i";
+}
+__name(flags, "flags");
+function regexpToRegexp(path, keys) {
+  if (!keys)
+    return path;
+  var groupsRegex = /\((?:\?<(.*?)>)?(?!\?)/g;
+  var index = 0;
+  var execResult = groupsRegex.exec(path.source);
+  while (execResult) {
+    keys.push({
+      // Use parenthesized substring match if available, index otherwise
+      name: execResult[1] || index++,
+      prefix: "",
+      suffix: "",
+      modifier: "",
+      pattern: ""
+    });
+    execResult = groupsRegex.exec(path.source);
+  }
+  return path;
+}
+__name(regexpToRegexp, "regexpToRegexp");
+function arrayToRegexp(paths, keys, options) {
+  var parts = paths.map(function(path) {
+    return pathToRegexp(path, keys, options).source;
+  });
+  return new RegExp("(?:".concat(parts.join("|"), ")"), flags(options));
+}
+__name(arrayToRegexp, "arrayToRegexp");
+function stringToRegexp(path, keys, options) {
+  return tokensToRegexp(parse(path, options), keys, options);
+}
+__name(stringToRegexp, "stringToRegexp");
+function tokensToRegexp(tokens, keys, options) {
+  if (options === void 0) {
+    options = {};
+  }
+  var _a = options.strict, strict = _a === void 0 ? false : _a, _b = options.start, start = _b === void 0 ? true : _b, _c = options.end, end = _c === void 0 ? true : _c, _d = options.encode, encode = _d === void 0 ? function(x) {
+    return x;
+  } : _d, _e = options.delimiter, delimiter = _e === void 0 ? "/#?" : _e, _f = options.endsWith, endsWith = _f === void 0 ? "" : _f;
+  var endsWithRe = "[".concat(escapeString(endsWith), "]|$");
+  var delimiterRe = "[".concat(escapeString(delimiter), "]");
+  var route = start ? "^" : "";
+  for (var _i = 0, tokens_1 = tokens; _i < tokens_1.length; _i++) {
+    var token = tokens_1[_i];
+    if (typeof token === "string") {
+      route += escapeString(encode(token));
+    } else {
+      var prefix = escapeString(encode(token.prefix));
+      var suffix = escapeString(encode(token.suffix));
+      if (token.pattern) {
+        if (keys)
+          keys.push(token);
+        if (prefix || suffix) {
+          if (token.modifier === "+" || token.modifier === "*") {
+            var mod = token.modifier === "*" ? "?" : "";
+            route += "(?:".concat(prefix, "((?:").concat(token.pattern, ")(?:").concat(suffix).concat(prefix, "(?:").concat(token.pattern, "))*)").concat(suffix, ")").concat(mod);
+          } else {
+            route += "(?:".concat(prefix, "(").concat(token.pattern, ")").concat(suffix, ")").concat(token.modifier);
+          }
+        } else {
+          if (token.modifier === "+" || token.modifier === "*") {
+            throw new TypeError('Can not repeat "'.concat(token.name, '" without a prefix and suffix'));
+          }
+          route += "(".concat(token.pattern, ")").concat(token.modifier);
+        }
+      } else {
+        route += "(?:".concat(prefix).concat(suffix, ")").concat(token.modifier);
+      }
+    }
+  }
+  if (end) {
+    if (!strict)
+      route += "".concat(delimiterRe, "?");
+    route += !options.endsWith ? "$" : "(?=".concat(endsWithRe, ")");
+  } else {
+    var endToken = tokens[tokens.length - 1];
+    var isEndDelimited = typeof endToken === "string" ? delimiterRe.indexOf(endToken[endToken.length - 1]) > -1 : endToken === void 0;
+    if (!strict) {
+      route += "(?:".concat(delimiterRe, "(?=").concat(endsWithRe, "))?");
+    }
+    if (!isEndDelimited) {
+      route += "(?=".concat(delimiterRe, "|").concat(endsWithRe, ")");
+    }
+  }
+  return new RegExp(route, flags(options));
+}
+__name(tokensToRegexp, "tokensToRegexp");
+function pathToRegexp(path, keys, options) {
+  if (path instanceof RegExp)
+    return regexpToRegexp(path, keys);
+  if (Array.isArray(path))
+    return arrayToRegexp(path, keys, options);
+  return stringToRegexp(path, keys, options);
+}
+__name(pathToRegexp, "pathToRegexp");
+
+// ../node_modules/wrangler/templates/pages-template-worker.ts
+var escapeRegex = /[.+?^${}()|[\]\\]/g;
+function* executeRequest(request) {
+  const requestPath = new URL(request.url).pathname;
+  for (const route of [...routes].reverse()) {
+    if (route.method && route.method !== request.method) {
+      continue;
+    }
+    const routeMatcher = match(route.routePath.replace(escapeRegex, "\\$&"), {
+      end: false
+    });
+    const mountMatcher = match(route.mountPath.replace(escapeRegex, "\\$&"), {
+      end: false
+    });
+    const matchResult = routeMatcher(requestPath);
+    const mountMatchResult = mountMatcher(requestPath);
+    if (matchResult && mountMatchResult) {
+      for (const handler of route.middlewares.flat()) {
+        yield {
+          handler,
+          params: matchResult.params,
+          path: mountMatchResult.path
+        };
+      }
+    }
+  }
+  for (const route of routes) {
+    if (route.method && route.method !== request.method) {
+      continue;
+    }
+    const routeMatcher = match(route.routePath.replace(escapeRegex, "\\$&"), {
+      end: true
+    });
+    const mountMatcher = match(route.mountPath.replace(escapeRegex, "\\$&"), {
+      end: false
+    });
+    const matchResult = routeMatcher(requestPath);
+    const mountMatchResult = mountMatcher(requestPath);
+    if (matchResult && mountMatchResult && route.modules.length) {
+      for (const handler of route.modules.flat()) {
+        yield {
+          handler,
+          params: matchResult.params,
+          path: matchResult.path
+        };
+      }
+      break;
+    }
+  }
+}
+__name(executeRequest, "executeRequest");
+var pages_template_worker_default = {
+  async fetch(originalRequest, env, workerContext) {
+    let request = originalRequest;
+    const handlerIterator = executeRequest(request);
+    let data = {};
+    let isFailOpen = false;
+    const next = /* @__PURE__ */ __name(async (input, init) => {
+      if (input !== void 0) {
+        let url = input;
+        if (typeof input === "string") {
+          url = new URL(input, request.url).toString();
+        }
+        request = new Request(url, init);
+      }
+      const result = handlerIterator.next();
+      if (result.done === false) {
+        const { handler, params, path } = result.value;
+        const context = {
+          request: new Request(request.clone()),
+          functionPath: path,
+          next,
+          params,
+          get data() {
+            return data;
+          },
+          set data(value) {
+            if (typeof value !== "object" || value === null) {
+              throw new Error("context.data must be an object");
+            }
+            data = value;
+          },
+          env,
+          waitUntil: workerContext.waitUntil.bind(workerContext),
+          passThroughOnException: () => {
+            isFailOpen = true;
+          }
+        };
+        const response = await handler(context);
+        if (!(response instanceof Response)) {
+          throw new Error("Your Pages function should return a Response");
+        }
+        return cloneResponse(response);
+      } else if ("ASSETS") {
+        const response = await env["ASSETS"].fetch(request);
+        return cloneResponse(response);
+      } else {
+        const response = await fetch(request);
+        return cloneResponse(response);
+      }
+    }, "next");
+    try {
+      return await next();
+    } catch (error) {
+      if (isFailOpen) {
+        const response = await env["ASSETS"].fetch(request);
+        return cloneResponse(response);
+      }
+      throw error;
+    }
+  }
+};
+var cloneResponse = /* @__PURE__ */ __name((response) => (
+  // https://fetch.spec.whatwg.org/#null-body-status
+  new Response(
+    [101, 204, 205, 304].includes(response.status) ? null : response.body,
+    response
+  )
+), "cloneResponse");
+export {
+  pages_template_worker_default as default
+};
+
+------formdata-undici-034256425593--

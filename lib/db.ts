@@ -1,7 +1,5 @@
 // Cloudflare D1 & Local SQLite Database Bridge for Gig Kavach
 
-import path from 'path';
-import fs from 'fs';
 import { User } from './auth';
 
 export interface D1DatabaseInterface {
@@ -68,21 +66,31 @@ export function getDatabase(cloudflareEnv?: { DB?: any }): D1DatabaseInterface {
   // Node.js local SQLite runtime
   if (!localDbInstance) {
     try {
-      const { DatabaseSync } = require('node:sqlite');
-      const dataDir = path.join(process.cwd(), '.data');
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
+      // Dynamic import / require so bundlers targeting Cloudflare Edge/Workers do not fail on Node built-ins
+      const req = typeof require !== 'undefined' ? require : () => null;
+      const nodePath = req('node:path') || req('path');
+      const nodeFs = req('node:fs') || req('fs');
+      const { DatabaseSync } = req('node:sqlite');
+
+      if (!nodePath || !nodeFs || !DatabaseSync) {
+        return createMemoryDb();
       }
-      const legacyPath = path.join(dataDir, 'saathi.sqlite');
-      const dbPath = path.join(dataDir, 'gig_kavach.sqlite');
-      if (!fs.existsSync(dbPath) && fs.existsSync(legacyPath)) {
-        try { fs.copyFileSync(legacyPath, dbPath); } catch {}
+
+      const dataDir = nodePath.join(process.cwd(), '.data');
+      if (!nodeFs.existsSync(dataDir)) {
+        nodeFs.mkdirSync(dataDir, { recursive: true });
+      }
+      const legacyPath = nodePath.join(dataDir, 'saathi.sqlite');
+      const dbPath = nodePath.join(dataDir, 'gig_kavach.sqlite');
+      if (!nodeFs.existsSync(dbPath) && nodeFs.existsSync(legacyPath)) {
+        try { nodeFs.copyFileSync(legacyPath, dbPath); } catch {}
       }
       localDbInstance = new DatabaseSync(dbPath);
       localDbInstance.exec(SCHEMA_SQL);
     } catch (err) {
       console.warn("Local SQLite initialization note:", err);
       // Fallback in-memory map if node:sqlite has permission issues
+
       return createMemoryDb();
     }
   }

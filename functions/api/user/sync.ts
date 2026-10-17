@@ -1,5 +1,5 @@
-import { verifySessionToken } from '../../lib/auth';
-import { getDatabase } from '../../lib/db';
+import { verifySessionToken } from '../../../lib/auth';
+import { getDatabase } from '../../../lib/db';
 
 export async function onRequestPost(context: any) {
   try {
